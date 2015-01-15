@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 xmlns:clientservice="services.clientservice.*"
+		 xmlns:valueObjects="valueObjects.*"
+		 xmlns:eventservice="services.eventservice.*"
+		 xmlns:userservice="services.userservice.*"
+		 xmlns:miscservice="services.miscservice.*"
+		 width="1024" height="768" chromeColor="#FFA729"
+		 creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			
+			import valueObjects.ClientSummaryVO;
+			import valueObjects.ClientVO;
+			import valueObjects.DefaultEventVO;
+			import valueObjects.EventVO;
+			
+			protected var uploadFileRef:FileReference;
+			protected var batchUpload:Boolean = false;
+			protected var batchNumClients:int = 0;
+			protected var batchClients:ArrayList; //list of clients in batch file to create
+			protected var batchIntakeDates:ArrayList;
+			protected var client:ClientVO;//the client currently being created by the batch process
+			private var global:sbirtfollowup = FlexGlobals.topLevelApplication as sbirtfollowup;
+			
+			/**
+			 * Check Problems
+			 * 1. On click, call service checkProblems
+			 * 2. On service return, prompt to save the file
+			 * 3. On save agree, save the file  
+			 * */
+			protected function checkProblemsButton_clickHandler(event:MouseEvent):void
+			{
+				checkProblemsResult.token = miscService.checkProblems();
+			}
+			
+			protected function checkProblemsResult_resultHandler(event:ResultEvent):void
+			{
+				if(checkProblemsResult.lastResult != null)
+				{
+					Alert.show("Save file?","",Alert.YES|Alert.NO,null,checkProblemsCloseHandler);
+				}
+			}
+			
+			protected function checkProblemsCloseHandler( event:CloseEvent ):void
+			{
+				if(event.detail == Alert.YES)
+				{
+					var file:FileReference = new FileReference();
+					var output:String = "";
+					for each(var line:String in checkProblemsResult.lastResult)
+					{
+						output += line + "\r\n" ;
+					}
+					file.save(output,"followupProblems.txt");
+				}
+			}
+			
+			/**
+			 * Export Clients
+			 * 1. On click, call service getClientsSummary
+			 * 2. On service return, prompt to save the file
+			 * 3. On save agree, save the file  
+			 * */
+			protected function exportClientsButton_clickHandler(event:MouseEvent):void
+			{
+				getClientsSummaryResult.token = clientService.getClientsSummary();
+			}
+			
+			protected function getClientsSummaryResult_resultHandler(event:ResultEvent):void
+			{
+				if(getClientsSummaryResult.lastResult != null)
+				{
+					Alert.show("Save file?","",Alert.YES|Alert.NO,null,exportClientsCloseHandler);
+				}
+			}
+			
+			protected function exportClientsCloseHandler( event:CloseEvent ):void
+			{
+				if(event.detail == Alert.YES)
+				{
+					var file:FileReference = new FileReference();
+					var output:String = "Database_ID,Client_ID,Status,BHS,Facility,IntakeDate,AppointmentDate\r\n";
+					for each(var client:ClientSummaryVO in getClientsSummaryResult.lastResult)
+					{
+						output += client.client_id + "," + client.wits_id + "," + client.client_status + "," + client.bhs + "," + client.facility + "," +
+							client.intakeDate + "," + client.appointmentDate + "\r\n" ;
+					}
+					file.save(output,"followupClients.csv");
+				}
+			}
+			
+			/**
+			 * Upload Clients
+			 * 1. On click, user browses for a file
+			 * 2. On file select, load file into the application (show progress bar during this process)
+			 * 3. On load complete, queue up client creations
+			 * 4. Loop the client creation process, creating one client each loop
+			 *    a. Create the client, store the client ID
+			 *    b. Create the default events based on the intake date and link to client ID
+			 * */
+			protected function uploadClientsButton_clickHandler(event:MouseEvent):void
+			{
+				uploadFileRef.browse();
+			}
+			
+			private function fileRef_select(evt:Event):void {
+				try {
+					uploadFileRef.load();
+				} catch (err:Error) {
+					Alert.show("File could not be uploaded. Check that you are uploading a valid csv file.", "ERROR");
+				}
+			}
+			
+			private function fileRef_progress(evt:ProgressEvent):void {
+				uploadProgress.visible = true;
+				returnButton.visible = false;
+			}
+			
+			private function fileRef_complete(evt:Event):void 
+			{
+				batchNumClients = 0;
+				batchClients = new ArrayList();
+				batchIntakeDates = new ArrayList();
+				batchUpload = true;
+				
+				var ba:ByteArray = evt.currentTarget.data as ByteArray;
+				var text:String = ba.readUTFBytes(ba.bytesAvailable);
+				var lines:Array = text.split("\n");
+				
+				//read each line and extract client ID, facility, BHS, and intake date
+				var idInd:int = 0;
+				var facilityInd:int = 14;
+				var bhsInd:int = 13;
+				var dateind:int = 1;
+				var followupInd:int = 16;
+				
+				for each(var line:String in lines)
+				{
+					var words:Array = line.split(",");
+					//if the client is a followup client
+					if(words.length > followupInd && words[followupInd] == "T")
+					{
+						var id:String = words[idInd];
+						var facility:String = words[facilityInd];
+						var bhs:String = words[bhsInd];
+						var bhsNum:int = global.searchBhsList.getItemIndex(bhs);
+						if(bhsNum == -1)
+							bhs = "ZZ";
+						else
+							bhs = global.searchBhsInitials[bhsNum];
+						var date:String = words[dateind];
+						
+						//For each client, add it to a list to be created
+						var tempClient:ClientVO = new ClientVO();
+						tempClient.wits_id = id;
+						tempClient.facility = facility;
+						tempClient.bhs = bhs;
+						tempClient.client_status = "Active";
+						tempClient.notes = "";
+						batchIntakeDates.addItem(date);
+						batchClients.addItem(tempClient);
+					}
+				}
+				
+				//Just create one client to start, the createClientResult function will create the next ones recursively
+				if(batchClients.length > 0)
+					createClientResult.token = clientService.createClient(batchClients.removeItemAt(0) as ClientVO);
+			}
+			
+			protected function createClientResult_resultHandler(event:ResultEvent):void
+			{
+				client.client_id = createClientResult.lastResult; //store the client
+
+				//If the client was created (b/c it was new), create default events for it
+				if(createClientResult.lastResult > 0)
+				{
+					batchNumClients += 1;//increase added client count
+					
+					//create default events for this client according to intake date
+					var words:Array = (batchIntakeDates.removeItemAt(0) as String).split("/");
+					var intakeDate:Date = new Date(parseInt(words[2]), parseInt(words[0])-1, parseInt(words[1]));//Flex counts months from 0 to 11
+					
+					if(client.client_status == "Referral")
+						createDefaultReferralEvents(intakeDate);
+					else
+						createDefaultEvents(intakeDate);
+				}
+				
+				//If there are any more clients to be created, create the next one
+				if(batchClients.length > 0)
+					createClientResult.token = clientService.createClient(batchClients.removeItemAt(0) as ClientVO);
+				else
+				{
+					//When done, announce number of clients created
+					uploadProgress.visible = false;
+					returnButton.visible = true;
+					Alert.show(batchNumClients.toString() + " new clients added.", "Upload Complete");
+				}
+			}
+			
+			protected function createDefaultEvents(startDate:Date):void
+			{				
+				for each(var dEvent:DefaultEventVO in global.defaultEvents)
+				{
+					submitDefaultEvent(startDate, dEvent.type, dEvent.offset, dEvent.note);
+				}
+			}	
+			
+			private function createDefaultReferralEvents(startDate:Date):void
+			{
+				submitDefaultEvent(new Date(), "Intake",0,"");
+				submitDefaultEvent(new Date(), "Call",14,"SYSTEM: Referral check.");
+			}
+			
+			protected function submitDefaultEvent(baseDate:Date, eventType:String, eventElapse:int, notes:String):void
+			{
+				var eventTemp:EventVO = new EventVO();
+				eventTemp.client_id = client.client_id;
+				eventTemp.type = eventType;
+				if(eventType=="Intake")
+					eventTemp.status = "Completed";
+				else
+					eventTemp.status = "Active";
+				eventTemp.targetdate = global.dateToTimestamp(new Date(baseDate.getTime() + eventElapse*1000*60*60*24));
+				eventTemp.notes = notes;
+				createEventResult.token = eventService.createEvent(eventTemp);
+			}
+			
+			protected function returnButton_clickHandler(event:MouseEvent):void
+			{
+				global.currentState = "State1";
+			}
+			
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				uploadFileRef = new FileReference();
+				uploadFileRef.addEventListener(Event.SELECT, fileRef_select);
+				uploadFileRef.addEventListener(ProgressEvent.PROGRESS, fileRef_progress);
+				uploadFileRef.addEventListener(Event.COMPLETE, fileRef_complete);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<s:CallResponder id="getClientsSummaryResult" result="getClientsSummaryResult_resultHandler(event)"/>
+		<clientservice:ClientService id="clientService"
+									 fault="Alert.show('my fault' + event.fault.faultString + '\n' + event.fault.faultDetail)"
+									 showBusyCursor="true"/>
+		<eventservice:EventService id="eventService"
+								   fault="Alert.show(event.fault.faultString + '\n' + event.fault.faultDetail)"
+								   showBusyCursor="true"/>
+		<s:CallResponder id="createClientResult" result="createClientResult_resultHandler(event)"/>
+		<s:CallResponder id="createEventResult"/>
+		<miscservice:MiscService id="miscService"
+								 fault="Alert.show(event.fault.faultString + '\n' + event.fault.faultDetail)"
+								 showBusyCursor="true"/>
+		<s:CallResponder id="checkProblemsResult" result="checkProblemsResult_resultHandler(event)"/>
+	</fx:Declarations>
+	<s:Panel x="330" y="231" width="319" height="233" title="Reports">
+		<s:layout>
+			<s:TileLayout horizontalGap="20" paddingLeft="10" paddingRight="10" paddingTop="15"
+						  requestedColumnCount="2" verticalGap="30"/>
+		</s:layout>
+		<s:Label text="Generate Problems File"/>
+		<s:Button id="checkProblemsButton" label="Run" click="checkProblemsButton_clickHandler(event)"/>
+		<s:Label text="Export Clients to File"/>
+		<s:Button id="exportClientsButton" label="Run" click="exportClientsButton_clickHandler(event)"/>
+		<s:Label text="Upload New Clients"/>
+		<s:Button id="uploadClientsButton" label="Browse" click="uploadClientsButton_clickHandler(event)"/>
+	</s:Panel>
+	<s:Button id="returnButton" x="421" y="426" label="Return to Main Page" click="returnButton_clickHandler(event)"/>
+	<mx:ProgressBar id="uploadProgress" x="392" y="417" indeterminate="true" visible="false"/>
+</s:Group>

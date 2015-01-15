@@ -21,7 +21,7 @@ and then change the found line.
 			   minWidth="800" minHeight="600"
 			   width="1024" height="650"
 			   creationComplete="application1_creationCompleteHandler(event)" currentState="Login"
-			   pageTitle="Follow-Up Support System"><!--TITLECHANGE-->
+			   pageTitle="Follow-Up Support System" xmlns:local="*" xmlns:components="components.*"><!--TITLECHANGE-->
 	<fx:Script>
 		<![CDATA[
 			import com.adobe.serializers.utility.TypeUtility;
@@ -56,31 +56,23 @@ and then change the found line.
 			[Bindable] protected var searchStatus:ArrayList = new ArrayList(["Active","Overdue","Failed","Completed","Referral"]);
 			[Bindable] protected var eventType:ArrayList = new ArrayList(["Intake","Call","Appointment"]);
 			[Bindable] protected var eventDate:Date;
-			[Bindable] protected var searchBhsList:ArrayList = new ArrayList([""]);
-			[Bindable] protected var searchBhsInitials:Array = [""];
+			[Bindable] public var searchBhsList:ArrayList = new ArrayList([""]);
+			[Bindable] public var searchBhsInitials:Array = [""];
 			[Bindable] protected var searchFacilityList:ArrayList = new ArrayList([""]);
 			[Bindable] protected var bhsList:ArrayList = new ArrayList();
 			[Bindable] protected var bhsInitials:Array = [];
 			[Bindable] protected var facilityList:ArrayCollection = new ArrayCollection();
-			[Bindable] protected var defaultEvents:Vector.<DefaultEventVO> = new Vector.<DefaultEventVO>();
+			[Bindable] public var defaultEvents:Vector.<DefaultEventVO> = new Vector.<DefaultEventVO>();
 			protected var dateSort:Sort;
 			protected var clientIDLength:int = 15;//If you want to enforce a character length, set this to a positive value
 			protected var updateAccount:Boolean;
-			protected var uploadFileRef:FileReference;
-			protected var batchUpload:Boolean = false;
-			protected var batchNumClients:int = 0;
-			protected var batchClients:ArrayList; //list of clients in batch file to create
-			protected var batchIntakeDates:ArrayList;
+			
 			public var DEBUG_MODE:int = 2;//0 = release, 1 = remote debug, 2 = local debug
 			
 			//DataGrid methods
 			protected function application1_creationCompleteHandler(event:FlexEvent):void
 			{
 				getFacilities.token = miscService.getFacilities();
-				uploadFileRef = new FileReference();
-				uploadFileRef.addEventListener(Event.SELECT, fileRef_select);
-				uploadFileRef.addEventListener(ProgressEvent.PROGRESS, fileRef_progress);
-				uploadFileRef.addEventListener(Event.COMPLETE, fileRef_complete);
 			}
 			
 			//Upon leaving the login page
@@ -213,48 +205,20 @@ and then change the found line.
 			protected function createClientResult_resultHandler(event:ResultEvent):void
 			{
 				client.client_id = createClientResult.lastResult;
-				if(!batchUpload)
+				if(client.client_id < 1)
 				{
-					if(client.client_id < 1)
-					{
-						Alert.show("A client with this Client ID already exists in the database.","CLIENT NOT CREATED");
-					}
-					else
-					{
-						if(client.client_status == "Referral")
-							Alert.show("Create the default REFERRAL events?","",Alert.YES|Alert.NO,this,createReferralAlertListener);
-						else
-							Alert.show("Create the default events?","",Alert.YES|Alert.NO,this,createEventAlertListener);
-						toggleFormsClient();
-						clientGridGroup.enabled = true;
-						eventGrid.enabled = true;
-						clientSearchForm.enabled = true;
-					}
+					Alert.show("A client with this Client ID already exists in the database.","CLIENT NOT CREATED");
 				}
 				else
 				{
-					//If the client was created (b/c it was new), create default events for it
-					if(client.client_id > 0)
-					{
-						//increase added client count
-						batchNumClients += 1;
-						//create default events for this client according to intake date
-						var words:Array = (batchIntakeDates.removeItemAt(0) as String).split("/");
-						var intakeDate:Date = new Date(parseInt(words[2]), parseInt(words[0])-1, parseInt(words[1]));//Flex counts months from 0 to 11
-						createDefaultEvents(intakeDate);
-					}
-					
-					//If there are any more clients to be created, create the next one
-					if(batchClients.length > 0)
-						createClientResult.token = clientService.createClient(batchClients.removeItemAt(0) as ClientVO);
+					if(client.client_status == "Referral")
+						Alert.show("Create the default REFERRAL events?","",Alert.YES|Alert.NO,this,createReferralAlertListener);
 					else
-					{
-						//When done, leave batch mode and announce number of clients created
-						batchUpload = false;
-						uploadProgress.visible = false;
-						returnButton.visible = true;
-						Alert.show(batchNumClients.toString() + " new clients added.", "Upload Complete");
-					}
+						Alert.show("Create the default events?","",Alert.YES|Alert.NO,this,createEventAlertListener);
+					toggleFormsClient();
+					clientGridGroup.enabled = true;
+					eventGrid.enabled = true;
+					clientSearchForm.enabled = true;
 				}
 			}
 			
@@ -438,8 +402,7 @@ and then change the found line.
 					submitDefaultEvent(startDate, dEvent.type, dEvent.offset, dEvent.note);
 				}
 				
-				if(!batchUpload)
-					getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
+				getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
 			}	
 			
 			private function createDefaultReferralEvents():void
@@ -541,12 +504,9 @@ and then change the found line.
 			
 			protected function createEventResult_resultHandler(event:ResultEvent):void
 			{
-				if(clientForm.enabled)
-				{
-					eventVO.event_id = createEventResult.lastResult;
-					client.events.addItem(eventVO.event_id);
-					eventGrid.selectedItem = eventVO;
-				}
+				eventVO.event_id = createEventResult.lastResult;
+				client.events.addItem(eventVO.event_id);
+				eventGrid.selectedItem = eventVO;
 			}
 			
 			protected function deleteEventButton_clickHandler(event:MouseEvent):void
@@ -577,7 +537,7 @@ and then change the found line.
 				return newDate;
 			}
 			
-			protected function dateToTimestamp(date:Date):int
+			public function dateToTimestamp(date:Date):int
 			{
 				var offset:int = 0;
 				offset = date.getTimezoneOffset()*60;
@@ -750,143 +710,14 @@ and then change the found line.
 				return ObjectUtil.compare(valueA,valueB);
 			}
 			
-			protected function returnButton_clickHandler(event:MouseEvent):void
-			{
-				currentState = "State1";
-			}
+
 			
 			protected function reportsButton_clickHandler(event:MouseEvent):void
 			{
 				currentState = "Reports";
 			}
 			
-			protected function checkProblemsButton_clickHandler(event:MouseEvent):void
-			{
-				checkProblemsResult.token = miscService.checkProblems();
-			}
-			
-			protected function checkProblemsResult_resultHandler(event:ResultEvent):void
-			{
-				if(checkProblemsResult.lastResult != null)
-				{
-					Alert.show("Save file?","",Alert.YES|Alert.NO,null,checkProblemsCloseHandler);
-				}
-			}
-			
-			protected function checkProblemsCloseHandler( event:CloseEvent ):void
-			{
-				if(event.detail == Alert.YES)
-				{
-					var file:FileReference = new FileReference();
-					var output:String = "";
-					for each(var line:String in checkProblemsResult.lastResult)
-					{
-						output += line + "\r\n" ;
-					}
-					file.save(output,"followupProblems.txt");
-				}
-			}
-			
-			protected function exportClientsButton_clickHandler(event:MouseEvent):void
-			{
-				getClientsSummaryResult.token = clientService.getClientsSummary();
-			}
-			
-			protected function getClientsSummaryResult_resultHandler(event:ResultEvent):void
-			{
-				if(getClientsSummaryResult.lastResult != null)
-				{
-					Alert.show("Save file?","",Alert.YES|Alert.NO,null,exportClientsCloseHandler);
-				}
-			}
-			
-			protected function exportClientsCloseHandler( event:CloseEvent ):void
-			{
-				if(event.detail == Alert.YES)
-				{
-					var file:FileReference = new FileReference();
-					var output:String = "Database_ID,Client_ID,Status,BHS,Facility,IntakeDate,AppointmentDate\r\n";
-					for each(var client:ClientSummaryVO in getClientsSummaryResult.lastResult)
-					{
-						output += client.client_id + "," + client.wits_id + "," + client.client_status + "," + client.bhs + "," + client.facility + "," +
-							client.intakeDate + "," + client.appointmentDate + "\r\n" ;
-					}
-					file.save(output,"followupClients.csv");
-				}
-			}
-			
-			protected function uploadClientsButton_clickHandler(event:MouseEvent):void
-			{
-				uploadFileRef.browse();
-			}
-			
-			private function fileRef_select(evt:Event):void {
-				try {
-					uploadFileRef.load();
-				} catch (err:Error) {
-					Alert.show("File could not be uploaded. Check that you are uploading a valid csv file.", "ERROR");
-				}
-			}
-			
-			private function fileRef_progress(evt:ProgressEvent):void {
-				uploadProgress.visible = true;
-				returnButton.visible = false;
-			}
-			
-			private function fileRef_complete(evt:Event):void 
-			{
-				batchNumClients = 0;
-				batchClients = new ArrayList();
-				batchIntakeDates = new ArrayList();
-				client = new ClientVO();
-				clientForm.enabled = false;
-				eventVO = new EventVO();
-				eventForm.enabled = false;
-				batchUpload = true;
-				
-				var ba:ByteArray = evt.currentTarget.data as ByteArray;
-				var text:String = ba.readUTFBytes(ba.bytesAvailable);
-				var lines:Array = text.split("\n");
-				
-				//read each line and extract client ID, facility, BHS, and intake date
-				var idInd:int = 0;
-				var facilityInd:int = 14;
-				var bhsInd:int = 13;
-				var dateind:int = 1;
-				var followupInd:int = 16;
-				
-				for each(var line:String in lines)
-				{
-					var words:Array = line.split(",");
-					//if the client is a followup client
-					if(words.length > followupInd && words[followupInd] == "T")
-					{
-						var id:String = words[idInd];
-						var facility:String = words[facilityInd];
-						var bhs:String = words[bhsInd];
-						var bhsNum:int = searchBhsList.getItemIndex(bhs);
-						if(bhsNum == -1)
-							bhs = "ZZ";
-						else
-							bhs = searchBhsInitials[bhsNum];
-						var date:String = words[dateind];
-						
-						//For each client, add it to a list to be created
-						var tempClient:ClientVO = new ClientVO();
-						tempClient.wits_id = id;
-						tempClient.facility = facility;
-						tempClient.bhs = bhs;
-						tempClient.client_status = "Active";
-						tempClient.notes = "";
-						batchIntakeDates.addItem(date);
-						batchClients.addItem(tempClient);
-					}
-				}
-				
-				//Just create one client to start, the createClientResult function will create the next ones recursively
-				if(batchClients.length > 0)
-					createClientResult.token = clientService.createClient(batchClients.removeItemAt(0) as ClientVO);
-			}
+
 			
 		]]>
 	</fx:Script>
@@ -896,7 +727,6 @@ and then change the found line.
 		<s:State name="Reports"/>
 	</s:states>
 	<fx:Declarations>
-		<s:CallResponder id="getClientsSummaryResult" result="getClientsSummaryResult_resultHandler(event)"/>
 		<clientservice:ClientService id="clientService"
 									 fault="Alert.show('my fault' + event.fault.faultString + '\n' + event.fault.faultDetail)"
 									 showBusyCursor="true"/>
@@ -933,7 +763,6 @@ and then change the found line.
 								 showBusyCursor="true"/>
 		<s:CallResponder id="getDefaultEvents" result="getDefaultEvents_resultHandler(event)"/>
 		<s:CallResponder id="getFacilities" result="getFacilities_resultHandler(event)"/>
-		<s:CallResponder id="checkProblemsResult" result="checkProblemsResult_resultHandler(event)"/>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
 	
@@ -1141,22 +970,8 @@ and then change the found line.
 				 text="Event" textDecoration="none"/>
 	</s:BorderContainer>
 	
-	<s:Group includeIn="Reports" x="0" y="0" width="1024" height="768" chromeColor="#FFA729">
-		<s:Panel includeIn="Reports" x="330" y="231" width="319" height="233" title="Reports">
-			<s:layout>
-				<s:TileLayout horizontalGap="20" paddingLeft="10" paddingRight="10" paddingTop="15"
-							  requestedColumnCount="2" verticalGap="30"/>
-			</s:layout>
-			<s:Label text="Generate Problems File"/>
-			<s:Button id="checkProblemsButton" label="Run" click="checkProblemsButton_clickHandler(event)"/>
-			<s:Label text="Export Clients to File"/>
-			<s:Button id="exportClientsButton" label="Run" click="exportClientsButton_clickHandler(event)"/>
-			<s:Label text="Upload New Clients"/>
-			<s:Button id="uploadClientsButton" label="Browse" click="uploadClientsButton_clickHandler(event)"/>
-		</s:Panel>
-		<s:Button id="returnButton" includeIn="Reports" x="421" y="426" label="Return to Main Page" click="returnButton_clickHandler(event)"/>
-		<mx:ProgressBar id="uploadProgress" x="392" y="417" indeterminate="true" visible="false"/>
-	</s:Group>
+	<components:ReportsPage includeIn="Reports">
+	</components:ReportsPage>
 	
 
 </s:Application>

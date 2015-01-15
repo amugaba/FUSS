@@ -109,7 +109,7 @@ class MiscService
 	    
 	    foreach ($clients as $client)
 	    {
-	    	if($client[2] != "Active")
+	    	if($client->client_status != "Active")
 	    		continue;
 	    		
 	    	$intakeDate = 0;
@@ -117,7 +117,7 @@ class MiscService
 	    	$active = false;
 	    	
 	    	$e = new EventService();
-	    	$events = $e->getEventsByID($client[0]);
+	    	$events = $e->getEventsByID($client->client_id);
 	    	
 	    	foreach ($events as $event)
 	    	{
@@ -130,24 +130,24 @@ class MiscService
 	    	}
 	    	
 	    	if(!$active)
-	    		array_push($problemList, $client[1] . ": " . $inactive);
+	    		array_push($problemList, $client->wits_id . ": " . $inactive);
 	    	if($apptDate == 0)
 	      {
 	        if((strtotime("now") - $intakeDate)/(24*60*60) > 150)
-	            array_push($problemList, $client[1] . ": " . $noappt_critical);
+	            array_push($problemList, $client->wits_id . ": " . $noappt_critical);
 	        else
-	    		array_push($problemList, $client[1] . ": " . $noappt);
+	    		array_push($problemList, $client->wits_id . ": " . $noappt);
 	   		}
 	    	if($intakeDate == 0)
-	    		array_push($problemList, $client[1] . ": " . $nointake);
+	    		array_push($problemList, $client->wits_id . ": " . $nointake);
 	    	
 	    	if($intakeDate != 0 && $apptDate != 0)
 	    	{
 	    		$daysToAppt = ($apptDate - $intakeDate)/(24*60*60);
 	    		if($daysToAppt < 150)
-	    			array_push($problemList, $client[1] . ": " . $toosoon);
+	    			array_push($problemList, $client->wits_id . ": " . $toosoon);
 	    		if($daysToAppt > 240)
-	    			array_push($problemList, $client[1] . ": " . $toolate);
+	    			array_push($problemList, $client->wits_id . ": " . $toolate);
 	    	}
 	    }
 	
