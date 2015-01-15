@@ -1,0 +1,1162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Follow-Up Support System
+Core application logic
+By David Tidd
+
+To make common modifications to the code, search (CTRL+F) for the tag next to the following items,
+and then change the found line.
+1. Page title, search TITLECHANGE
+2. Logo on login page, search LOGOCHANGE
+
+-->
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009"
+			   xmlns:s="library://ns.adobe.com/flex/spark"
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   xmlns:clientservice="services.clientservice.*"
+			   xmlns:valueObjects="valueObjects.*"
+			   xmlns:eventservice="services.eventservice.*"
+			   xmlns:userservice="services.userservice.*"
+			   xmlns:miscservice="services.miscservice.*"
+			   minWidth="800" minHeight="600"
+			   width="1024" height="650"
+			   creationComplete="application1_creationCompleteHandler(event)" currentState="Login"
+			   pageTitle="Follow-Up Support System"><!--TITLECHANGE-->
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.serializers.utility.TypeUtility;
+			
+			import flash.system.Security;
+			
+			import flashx.textLayout.events.SelectionEvent;
+			
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.CalendarLayoutChangeEvent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.utils.ObjectUtil;
+			
+			import spark.collections.Sort;
+			import spark.collections.SortField;
+			import spark.components.gridClasses.GridSelectionMode;
+			import spark.events.GridSelectionEvent;
+			
+			import valueObjects.ClientVO;
+			import valueObjects.ClientSummaryVO;
+			import valueObjects.DefaultEventVO;
+
+			//Bound form fields and data
+			[Bindable] protected var clientList:ArrayCollection;
+			[Bindable] protected var eventList:ArrayCollection;
+			[Bindable] protected var client:ClientVO;
+			[Bindable] protected var clientStatus:ArrayList = new ArrayList(["Active","Failed","Completed","Referral"]);
+			[Bindable] protected var eventStatus:ArrayList = new ArrayList(["Active","Failed","Completed"]);
+			[Bindable] protected var searchStatus:ArrayList = new ArrayList(["Active","Overdue","Failed","Completed","Referral"]);
+			[Bindable] protected var eventType:ArrayList = new ArrayList(["Intake","Call","Appointment"]);
+			[Bindable] protected var eventDate:Date;
+			[Bindable] protected var searchBhsList:ArrayList = new ArrayList([""]);
+			[Bindable] protected var searchBhsInitials:Array = [""];
+			[Bindable] protected var searchFacilityList:ArrayList = new ArrayList([""]);
+			[Bindable] protected var bhsList:ArrayList = new ArrayList();
+			[Bindable] protected var bhsInitials:Array = [];
+			[Bindable] protected var facilityList:ArrayCollection = new ArrayCollection();
+			[Bindable] protected var defaultEvents:Vector.<DefaultEventVO> = new Vector.<DefaultEventVO>();
+			protected var dateSort:Sort;
+			protected var clientIDLength:int = 15;//If you want to enforce a character length, set this to a positive value
+			protected var updateAccount:Boolean;
+			protected var uploadFileRef:FileReference;
+			protected var batchUpload:Boolean = false;
+			protected var batchNumClients:int = 0;
+			protected var batchClients:ArrayList; //list of clients in batch file to create
+			protected var batchIntakeDates:ArrayList;
+			public var DEBUG_MODE:int = 2;//0 = release, 1 = remote debug, 2 = local debug
+			
+			//DataGrid methods
+			protected function application1_creationCompleteHandler(event:FlexEvent):void
+			{
+				getFacilities.token = miscService.getFacilities();
+				uploadFileRef = new FileReference();
+				uploadFileRef.addEventListener(Event.SELECT, fileRef_select);
+				uploadFileRef.addEventListener(ProgressEvent.PROGRESS, fileRef_progress);
+				uploadFileRef.addEventListener(Event.COMPLETE, fileRef_complete);
+			}
+			
+			//Upon leaving the login page
+			protected function state1_enterStateHandler(event:FlexEvent):void
+			{
+				clientForm.enabled = false;
+				eventGrid.enabled = false;
+				eventForm.enabled = false;
+				
+				var sortField:SortField = new SortField();
+				sortField.compareFunction = date_compareFunc;
+				sortField.descending = false;
+				
+				dateSort = new Sort();
+				dateSort.fields = [sortField];
+			}
+
+			//Client Grid
+			protected function clientGrid_creationCompleteHandler(event:FlexEvent):void
+			{
+				searchClients();
+			}
+			
+			//When selecting a client, call the following services. Their result methods will populate the event panel.
+			protected function clientGrid_selectionChangeHandler(event:GridSelectionEvent):void
+			{
+				client = clientGrid.selectedItem as ClientVO; //duplicated in CallResponder for getClientByIDResult
+				getClientByIDResult.token = clientService.getClientByID(clientGrid.selectedItem.client_id);
+				getEventsByIDResult.token = eventService.getEventsByID(clientGrid.selectedItem.client_id);
+				clientForm.enabled = true;
+				eventGrid.enabled = true;
+				eventForm.enabled = false;
+			}
+
+			//Event Grid
+			protected function eventGrid_creationCompleteHandler(event:FlexEvent):void
+			{
+				getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
+			}
+			
+			protected function eventGrid_selectionChangeHandler(event:GridSelectionEvent):void
+			{
+				eventVO = eventGrid.selectedItem as EventVO;
+				getEventByEventIDResult.token = eventService.getEventByEventID(eventGrid.selectedItem.event_id);
+				eventDate = timestampToDate(eventVO.targetdate);
+				eventForm.enabled = true;
+			}
+			
+			protected function searchClients():void
+			{
+				var statuses:Array = new Array();
+				var i : int;
+				for(i = 0; i < clientSearch_StatusInput.selectedItems.length; i++)
+				{
+					statuses.push("'"+clientSearch_StatusInput.selectedItems[i]+"'");
+				}
+
+				searchClientsResult.token = clientService.searchClients(clientSearch_ClientIDInput.text, 
+																		statuses.join(","),
+																		searchBhsInitials[clientSearch_BHSInput.selectedIndex],
+																		clientSearch_FacilityInput.selectedItem);
+			}
+			
+			//CRUD methods for Client
+			protected function createClientButton_clickHandler(event:MouseEvent):void
+			{
+				client = new ClientVO();
+				client.client_status = "Active";
+				client.attention = false;
+				client.events = new Array();
+				client.bhs = userVO.initials;
+				client.facility = userVO.facility;
+				toggleFormsClient();
+				getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
+				eventVO = new EventVO();
+				clientGrid.selectedItem = null;
+				clientGridGroup.enabled = false;
+				clientForm.enabled = true;
+				eventGrid.enabled = false;
+				eventForm.enabled = false;
+				clientSearchForm.enabled = false;
+			}
+			
+			protected function cancelClientButton_clickHandler(event:MouseEvent):void
+			{
+				toggleFormsClient();
+				clientGridGroup.enabled = true;
+				clientForm.enabled = false;
+				clientSearchForm.enabled = true;
+			}
+			
+			protected function submitClientButton_clickHandler(event:MouseEvent):void
+			{
+				var errorMessage:String = "";
+				
+				if(clientIDLength > 0 && client_idTextInput.text.length != clientIDLength)
+					errorMessage += "Client ID must be " + clientIDLength.toString() + " characters.\n\n";
+
+				if(bhsListInput.selectedItem == "Unknown")
+					errorMessage += "BHS should not be Unknown.\n\n";
+				
+				if(facilityListInput.selectedItem == "Unknown")
+					errorMessage += "Facility should not be Unknown.\n\n";
+				
+				if(errorMessage.length >0)
+				{
+					Alert.show(errorMessage,"CLIENT NOT CREATED");
+				}
+				else
+				{
+					client.wits_id = client_idTextInput.text;
+					client.client_status = statusListInput.selectedItem;
+					client.notes = notesTextInput.text;
+					client.bhs = bhsInitials[bhsListInput.selectedIndex];
+					client.facility = facilityListInput.selectedItem;
+					createClientResult.token = clientService.createClient(client);
+				}
+				
+			}
+			
+			protected function toggleFormsClient():void
+			{
+				updateClientButton.enabled = !updateClientButton.enabled;
+				deleteClientButton.visible = !deleteClientButton.visible;
+				cancelClientButton.visible = !cancelClientButton.visible;
+				submitClientButton.visible = !submitClientButton.visible;
+				createEventButton.enabled = !createEventButton.enabled;
+			}
+			
+			protected function createClientResult_resultHandler(event:ResultEvent):void
+			{
+				client.client_id = createClientResult.lastResult;
+				if(!batchUpload)
+				{
+					if(client.client_id < 1)
+					{
+						Alert.show("A client with this Client ID already exists in the database.","CLIENT NOT CREATED");
+					}
+					else
+					{
+						if(client.client_status == "Referral")
+							Alert.show("Create the default REFERRAL events?","",Alert.YES|Alert.NO,this,createReferralAlertListener);
+						else
+							Alert.show("Create the default events?","",Alert.YES|Alert.NO,this,createEventAlertListener);
+						toggleFormsClient();
+						clientGridGroup.enabled = true;
+						eventGrid.enabled = true;
+						clientSearchForm.enabled = true;
+					}
+				}
+				else
+				{
+					//If the client was created (b/c it was new), create default events for it
+					if(client.client_id > 0)
+					{
+						//increase added client count
+						batchNumClients += 1;
+						//create default events for this client according to intake date
+						var words:Array = (batchIntakeDates.removeItemAt(0) as String).split("/");
+						var intakeDate:Date = new Date(parseInt(words[2]), parseInt(words[0])-1, parseInt(words[1]));//Flex counts months from 0 to 11
+						createDefaultEvents(intakeDate);
+					}
+					
+					//If there are any more clients to be created, create the next one
+					if(batchClients.length > 0)
+						createClientResult.token = clientService.createClient(batchClients.removeItemAt(0) as ClientVO);
+					else
+					{
+						//When done, leave batch mode and announce number of clients created
+						batchUpload = false;
+						uploadProgress.visible = false;
+						returnButton.visible = true;
+						Alert.show(batchNumClients.toString() + " new clients added.", "Upload Complete");
+					}
+				}
+			}
+			
+			protected function updateClientButton_clickHandler(event:MouseEvent):void
+			{
+				var errorMessage:String = "";
+				var warningMessage:String = "";
+				
+				if(clientIDLength > 0 && client_idTextInput.text.length != clientIDLength)
+					errorMessage += "Client ID must be " + clientIDLength.toString() + " characters.\n\n";
+
+				if(statusListInput.selectedItem == "Completed" && statusListInput.selectedItem != client.client_status)
+				{
+					var complete:Boolean = false;
+					for each(var ev:EventVO in eventList)
+					{
+						if(ev.type == "Appointment" && ev.status == "Completed")
+							complete = true;
+					}
+					if(!complete)
+						errorMessage += "Client cannot be Completed until Appointment has been Completed.\n\n";
+				}
+				
+				if(statusListInput.selectedItem == "Failed" && statusListInput.selectedItem != client.client_status)
+					warningMessage += "Are you sure this client is Failed? No further follow-up actions will EVER be performed.\n\n";
+				
+				if(client_idTextInput.text != client.wits_id)
+					warningMessage += "Are you sure you want to change the Client ID?\n\n";
+
+				if(bhsInitials[bhsListInput.selectedIndex] != client.bhs)
+					warningMessage += "Are you sure you want to change the BHS?\n\n";
+				
+				if(errorMessage.length > 0)
+				{
+					Alert.show(errorMessage,"CLIENT NOT UPDATED");
+				}
+				else if(warningMessage.length > 0)
+				{
+					Alert.show(warningMessage,"WARNING",Alert.YES|Alert.NO,this,updateClientAlertListener);
+				}
+				else
+					updateClient();
+				
+			}
+			
+			protected function updateClientAlertListener(eventObj:CloseEvent):void {
+				if (eventObj.detail==Alert.YES)
+					updateClient();
+			}
+			
+			protected function updateClient():void
+			{
+				client.wits_id = client_idTextInput.text;
+				client.client_status = statusListInput.selectedItem;
+				client.notes = notesTextInput.text;
+				client.bhs = bhsInitials[bhsListInput.selectedIndex];
+				client.facility = facilityListInput.selectedItem;
+				updateClientResult.token = clientService.updateClient(client);
+			}
+			
+			protected function deleteClientButton_clickHandler(event:MouseEvent):void
+			{
+				Alert.show("Are you sure you wish to delete this client?","WARNING",Alert.YES|Alert.NO,this,deleteClientAlterListener);
+			}
+			
+			protected function deleteClientAlterListener(eventObj:CloseEvent):void 
+			{
+				if(eventObj.detail==Alert.YES)
+				{
+					deleteClientResult.token = clientService.deleteClient(client.client_id);
+					searchClients();
+					clientGrid.clearSelection();
+					eventGrid.clearSelection();
+					client = new ClientVO();
+					eventVO = new EventVO();
+					eventForm.enabled = false;
+					clientForm.enabled = false;
+					getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
+				}
+			}
+			
+			
+			//CRUD methods for Event
+			protected function updateEventButton_clickHandler(event:MouseEvent):void
+			{
+				var warningMessage:String = "";
+				var errorMessage:String = "";
+				var date:Date = datePicker.selectedDate;
+				
+				if(!(date is Date))
+					errorMessage += "Enter date in format MM-DD-YY.\n\n";
+				else
+				{
+					var dayDifference:int = (date.getTime() - new Date().getTime()) / (1000*60*60*24);
+					
+					if(dayDifference < -30)
+						warningMessage += "Date is more the 30 days in the past. Use this date?\n\n";
+					
+					else if(dayDifference > 180)
+						warningMessage += "Date is more the 180 days in the future. Use this date?\n\n";
+					
+					if(date.day == 0 || date.day == 6)
+						warningMessage += "Date is on Saturday or Sunday. Use this date?\n\n";
+				}
+				
+				if(errorMessage.length > 0)
+					Alert.show(errorMessage,"EVENT NOT UPDATED");
+				else if(warningMessage.length > 0)
+				{
+					Alert.show(warningMessage,"WARNING",Alert.YES|Alert.NO,this, updateEventAlertListener);
+				}
+				else
+					updateEvent();
+			}
+			
+			protected function updateEventAlertListener(eventObj:CloseEvent):void
+			{
+				if(eventObj.detail == Alert.YES)
+				{
+					updateEvent();
+				}
+			}
+			
+			protected function updateEvent():void
+			{
+				eventVO.type = typeListInput.selectedItem;
+				eventVO.targetdate = dateToTimestamp(new Date(eventDate.getTime() + eventDate.getTimezoneOffset()*60*1000));
+				eventVO.status = statusListInput2.selectedItem;
+				eventVO.attention = attentionCheckBox2.selected;
+				eventVO.notes = notesTextInput2.text;
+				updateEventResult.token = eventService.updateEvent(eventVO);
+				getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
+			}
+			
+			protected function createEventButton_clickHandler(event:MouseEvent):void
+			{
+				if(client.events.length == 0)
+					Alert.show("Create the default events?","",Alert.YES|Alert.NO,this,createEventAlertListener);
+				else
+					prepareEventForm();
+			}
+			
+			protected function createEventAlertListener(eventObj:CloseEvent):void 
+			{
+				if (eventObj.detail==Alert.YES) 
+					createDefaultEvents();
+				else
+					prepareEventForm();
+			}
+			
+			protected function createReferralAlertListener(eventObj:CloseEvent):void
+			{
+				if (eventObj.detail==Alert.YES) 
+					createDefaultReferralEvents();
+				else
+					prepareEventForm();
+			}
+			
+			protected function prepareEventForm():void
+			{
+				eventVO = new EventVO();
+				eventVO.status = "Active";
+				eventVO.type = "Intake";
+				eventDate = new Date();
+				eventVO.client_id = client.client_id;
+				toggleFormsEvent();
+				eventGrid.clearSelection();
+				clientGridGroup.enabled = false;
+				clientForm.enabled = false;
+				eventForm.enabled = true;
+				clientSearchForm.enabled = false;
+			}
+			
+			protected function createDefaultEvents(startDate:Date = null):void
+			{
+				if(startDate == null)
+					startDate = new Date();
+				
+				for each(var dEvent:DefaultEventVO in defaultEvents)
+				{
+					submitDefaultEvent(startDate, dEvent.type, dEvent.offset, dEvent.note);
+				}
+				
+				if(!batchUpload)
+					getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
+			}	
+			
+			private function createDefaultReferralEvents():void
+			{
+				submitDefaultEvent(new Date(), "Intake",0,"");
+				submitDefaultEvent(new Date(), "Call",14,"PLACEHOLDER: Referral check.");
+				getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
+			}
+			
+			//eventElapse is in Days
+			protected function submitDefaultEvent(baseDate:Date, eventType:String, eventElapse:int, notes:String):void
+			{
+				var eventTemp:EventVO = new EventVO();
+				eventDate = baseDate;
+				eventTemp.client_id = client.client_id;
+				eventTemp.type = eventType;
+				if(eventType=="Intake")
+					eventTemp.status = "Completed";
+				else
+					eventTemp.status = "Active";
+				eventTemp.targetdate = dateToTimestamp(new Date(eventDate.getTime() + eventElapse*1000*60*60*24));
+				eventTemp.notes = notes;
+				createEventResult.token = eventService.createEvent(eventTemp);
+			}
+			
+			protected function cancelEventButton_clickHandler(event:MouseEvent):void
+			{
+				toggleFormsEvent();
+				clientGridGroup.enabled = true;
+				clientForm.enabled = true;
+				eventForm.enabled = false;
+				clientSearchForm.enabled = true;
+			}
+			
+			protected function submitEventButton_clickHandler(event:MouseEvent):void
+			{
+				var warningMessage:String = "";
+				var errorMessage:String = "";
+				var date:Date = datePicker.selectedDate;
+				
+				if(!(date is Date))
+					errorMessage += "Enter date in format MM-DD-YY.\n\n";
+				else
+				{				
+					var dayDifference:int = (date.getTime() - new Date().getTime()) / (1000*60*60*24);
+					
+					if(dayDifference < -30)
+						warningMessage += "Date is more the 30 days in the past. Use this date?\n\n";
+					
+					else if(dayDifference > 180)
+						warningMessage += "Date is more the 180 days in the future. Use this date?\n\n";
+					
+					if(date.day == 0 || date.day == 6)
+						warningMessage += "Date is on Saturday or Sunday. Use this date?\n\n";
+				}
+				
+				if(errorMessage.length > 0)
+					Alert.show(errorMessage,"EVENT NOT CREATED");
+				else if(warningMessage.length > 0)
+				{
+					Alert.show(warningMessage,"WARNING",Alert.YES|Alert.NO,this, submitEventAlertListener);
+				}
+				else
+					createEvent();
+			}
+			
+			protected function submitEventAlertListener(eventObj:CloseEvent):void
+			{
+				if(eventObj.detail == Alert.YES)
+				{
+					createEvent();
+				}
+			}
+			
+			protected function createEvent():void
+			{
+				eventVO.type = typeListInput.selectedItem;
+				eventVO.targetdate = dateToTimestamp(new Date(eventDate.getTime() + eventDate.getTimezoneOffset()*60*1000));
+				eventVO.status = statusListInput2.selectedItem;
+				eventVO.attention = attentionCheckBox2.selected;
+				eventVO.notes = notesTextInput2.text;
+				createEventResult.token = eventService.createEvent(eventVO);
+				getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
+				toggleFormsEvent();
+				clientGridGroup.enabled = true;
+				clientForm.enabled = true;
+				eventForm.enabled = true;
+				clientSearchForm.enabled = true;
+			}
+			
+			protected function toggleFormsEvent():void
+			{
+				updateEventButton.enabled = !updateEventButton.enabled;
+				deleteEventButton.visible = !deleteEventButton.visible;
+				cancelEventButton.visible = !cancelEventButton.visible;
+				submitEventButton.visible = !submitEventButton.visible;
+				statusListInput2.enabled = !statusListInput2.enabled;
+			}
+			
+			protected function createEventResult_resultHandler(event:ResultEvent):void
+			{
+				if(clientForm.enabled)
+				{
+					eventVO.event_id = createEventResult.lastResult;
+					client.events.addItem(eventVO.event_id);
+					eventGrid.selectedItem = eventVO;
+				}
+			}
+			
+			protected function deleteEventButton_clickHandler(event:MouseEvent):void
+			{
+				Alert.show("Are you sure you wish to delete this event?","",Alert.YES|Alert.NO,this,deleteEventAlterListener);
+			}
+			
+			protected function deleteEventAlterListener(eventObj:CloseEvent):void 
+			{
+				if(eventObj.detail==Alert.YES)
+				{
+					deleteEventResult.token = eventService.deleteEvent(eventVO);
+					//client.events.removeItemAt(client.events.getItemIndex(eventVO.event_id));
+					getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
+					eventForm.enabled = false;
+					eventVO = new EventVO();
+				}
+			}
+			
+			
+			//Utility methods
+			protected function timestampToDate(num:int):Date
+			{
+				var date : Date = new Date(num*1000);
+				var offset:int = 0;
+				offset = date.getTimezoneOffset() * 60 * 1000;
+				var newDate : Date = new Date(num*1000 + date.getTimezoneOffset() * 60 * 1000);
+				return newDate;
+			}
+			
+			protected function dateToTimestamp(date:Date):int
+			{
+				var offset:int = 0;
+				offset = date.getTimezoneOffset()*60;
+				var newTime:int = date.getTime()/1000 - date.getTimezoneOffset()*60 
+				return newTime;
+			}
+			
+			protected function dateLabelFunction(obj:EventVO, column:GridColumn):String
+			{
+				return timestampToDate(obj.targetdate).toDateString();
+			}
+			
+			
+			
+			
+			
+			protected function datePicker_changeHandler(event:CalendarLayoutChangeEvent):void
+			{
+				if(!(datePicker.selectedDate is Date))
+				{
+					Alert.show("Enter date in format MM-DD-YY", "Invalid Date");
+				}
+			}
+			
+			protected function clientSearchButton_clickHandler(event:MouseEvent):void
+			{
+				searchClients();
+			}
+			
+			
+			protected function loginButton_clickHandler(event:MouseEvent):void
+			{
+				updateAccount = false;
+				loginUserResult.token = userService.loginUser(usernameInput.text, passwordInput.text);
+			}
+
+			protected function updateAccountButton_clickHandler(event:MouseEvent):void
+			{
+				updateAccount = true;
+				loginUserResult.token = userService.loginUser(usernameInput.text, passwordInput.text);
+			}
+			
+			protected function loginUserResult_resultHandler(event:ResultEvent):void
+			{
+				//Alert.show(ObjectUtil.toString(loginUserResult.lastResult));
+				if(loginUserResult.lastResult == null)
+				{
+					Alert.show("Username and password are incorrect.", "Login Failed");
+				}
+				else
+				{
+					userVO = loginUserResult.lastResult as UserVO;
+					if(updateAccount)
+						updateAccountPanel.visible = true;
+					else
+					{
+						getUsers.token = userService.getUsers();
+						getDefaultEvents.token = miscService.getDefaultEvents();
+						currentState = "State1";
+					}
+				}
+			}			
+			
+			
+			protected function changePasswordButton_clickHandler(event:MouseEvent):void
+			{
+				if(newPasswordInput.text == confirmPassowrdInput.text && newPasswordInput.text.length > 4)
+				{
+					userVO.password = newPasswordInput.text;
+					updateUserResult.token = userService.updateUser(userVO);
+				}
+				else
+					Alert.show("The passwords must match and be 5 or more characters.", "Password NOT changed");
+			}
+			
+			protected function changeFacilityButton_clickHandler(event:MouseEvent):void
+			{
+				userVO.facility = accountFacility.selectedItem;
+				updateUserResult.token = userService.updateUser(userVO);
+			}
+			
+			protected function updateUserResult_resultHandler(event:ResultEvent):void
+			{
+				if(updateUserResult.lastResult == null)
+					Alert.show("Account NOT updated.", "ERROR");
+				else
+					Alert.show("Account updated.", "SUCCESS");
+			}
+			
+			protected function forgotPasswordButton_clickHandler(event:MouseEvent):void
+			{
+				emailPasswordResult.token = userService.emailPassword(usernameInput.text);
+			}
+			
+			protected function emailPasswordResult_resultHandler(event:ResultEvent):void
+			{
+				if(emailPasswordResult.lastResult)
+					Alert.show("Password has been sent to your email address.", "SUCCESS");
+				else
+					Alert.show("Username not found.", "ERROR");
+			}
+			
+			protected function getUsers_resultHandler(event:ResultEvent):void
+			{
+				//initialize BHS name and intials arrays
+				for each(var user:UserVO in getUsers.lastResult)
+				{
+					bhsList.addItem(user.name);
+					searchBhsList.addItem(user.name);
+					bhsInitials.push(user.initials);
+					searchBhsInitials.push(user.initials);
+				}
+				bhsList.addItem("Unknown");
+				searchBhsList.addItem("Unknown");
+				bhsInitials.push("ZZ");
+				searchBhsInitials.push("ZZ");
+			}
+			
+			protected function getDefaultEvents_resultHandler(event:ResultEvent):void
+			{
+				for each(var defaultEvent:DefaultEventVO in getDefaultEvents.lastResult)
+				{
+					defaultEvents.push(defaultEvent);
+				}
+			}
+			
+			protected function getFacilities_resultHandler(event:ResultEvent):void
+			{
+				facilityList = getFacilities.lastResult;
+				searchFacilityList.addAll(getFacilities.lastResult);
+			}
+			
+			protected function getEventsByIDResult_resultHandler(event:ResultEvent):void
+			{
+				eventList = getEventsByIDResult.lastResult;
+				//eventGrid.sortByColumns(new Vector.<int>(2));
+				eventList.sort = dateSort;
+				eventList.refresh();
+			}
+			
+			protected function updateEventResult_resultHandler(event:ResultEvent):void
+			{
+				if(eventVO.type == "Appointment" && eventVO.status == "Failed")
+					Alert.show("Create reminder events for sending letter, calling collateral, checking Wishard's sytem?","The appointment has been missed.",
+						Alert.YES|Alert.NO,null,createReminderEvents);
+			}
+			
+			protected function createReminderEvents(event:CloseEvent):void
+			{
+				if(event.detail == Alert.YES)
+				{
+					var intakeDate:Date = new Date();
+					for each(var ev:EventVO in eventList)
+						if(ev.type == "Intake")
+							intakeDate = timestampToDate(ev.targetdate);
+						
+					var eightMonthDate:Date = new Date(intakeDate.getTime() + 8*30*1000*60*60*24);
+					var dayDifference:int = (eightMonthDate.getTime() - new Date().getTime()) / (1000*60*60*24);
+					
+					for(var i:int = 0; i < dayDifference; i += 25)
+						submitDefaultEvent(new Date(), "Call",i,"SYSTEM: Monthly contact event. Call collateral. Call patient and/or send letter. " +
+							"Check Wishard registration for different contact info and appt times.");
+					getEventsByIDResult.token = eventService.getEventsByID(client.client_id);
+				}
+			}
+			
+			private function date_compareFunc(eventA:EventVO, eventB:EventVO):int {
+				var valueA:int = eventA.targetdate;
+				var valueB:int = eventB.targetdate;
+				return ObjectUtil.compare(valueA,valueB);
+			}
+			
+			protected function returnButton_clickHandler(event:MouseEvent):void
+			{
+				currentState = "State1";
+			}
+			
+			protected function reportsButton_clickHandler(event:MouseEvent):void
+			{
+				currentState = "Reports";
+			}
+			
+			protected function checkProblemsButton_clickHandler(event:MouseEvent):void
+			{
+				checkProblemsResult.token = miscService.checkProblems();
+			}
+			
+			protected function checkProblemsResult_resultHandler(event:ResultEvent):void
+			{
+				if(checkProblemsResult.lastResult != null)
+				{
+					Alert.show("Save file?","",Alert.YES|Alert.NO,null,checkProblemsCloseHandler);
+				}
+			}
+			
+			protected function checkProblemsCloseHandler( event:CloseEvent ):void
+			{
+				if(event.detail == Alert.YES)
+				{
+					var file:FileReference = new FileReference();
+					var output:String = "";
+					for each(var line:String in checkProblemsResult.lastResult)
+					{
+						output += line + "\r\n" ;
+					}
+					file.save(output,"followupProblems.txt");
+				}
+			}
+			
+			protected function exportClientsButton_clickHandler(event:MouseEvent):void
+			{
+				getClientsSummaryResult.token = clientService.getClientsSummary();
+			}
+			
+			protected function getClientsSummaryResult_resultHandler(event:ResultEvent):void
+			{
+				if(getClientsSummaryResult.lastResult != null)
+				{
+					Alert.show("Save file?","",Alert.YES|Alert.NO,null,exportClientsCloseHandler);
+				}
+			}
+			
+			protected function exportClientsCloseHandler( event:CloseEvent ):void
+			{
+				if(event.detail == Alert.YES)
+				{
+					var file:FileReference = new FileReference();
+					var output:String = "Database_ID,Client_ID,Status,BHS,Facility,IntakeDate,AppointmentDate\r\n";
+					for each(var client:ClientSummaryVO in getClientsSummaryResult.lastResult)
+					{
+						output += client.client_id + "," + client.wits_id + "," + client.client_status + "," + client.bhs + "," + client.facility + "," +
+							client.intakeDate + "," + client.appointmentDate + "\r\n" ;
+					}
+					file.save(output,"followupClients.csv");
+				}
+			}
+			
+			protected function uploadClientsButton_clickHandler(event:MouseEvent):void
+			{
+				uploadFileRef.browse();
+			}
+			
+			private function fileRef_select(evt:Event):void {
+				try {
+					uploadFileRef.load();
+				} catch (err:Error) {
+					Alert.show("File could not be uploaded. Check that you are uploading a valid csv file.", "ERROR");
+				}
+			}
+			
+			private function fileRef_progress(evt:ProgressEvent):void {
+				uploadProgress.visible = true;
+				returnButton.visible = false;
+			}
+			
+			private function fileRef_complete(evt:Event):void 
+			{
+				batchNumClients = 0;
+				batchClients = new ArrayList();
+				batchIntakeDates = new ArrayList();
+				client = new ClientVO();
+				clientForm.enabled = false;
+				eventVO = new EventVO();
+				eventForm.enabled = false;
+				batchUpload = true;
+				
+				var ba:ByteArray = evt.currentTarget.data as ByteArray;
+				var text:String = ba.readUTFBytes(ba.bytesAvailable);
+				var lines:Array = text.split("\n");
+				
+				//read each line and extract client ID, facility, BHS, and intake date
+				var idInd:int = 0;
+				var facilityInd:int = 14;
+				var bhsInd:int = 13;
+				var dateind:int = 1;
+				var followupInd:int = 16;
+				
+				for each(var line:String in lines)
+				{
+					var words:Array = line.split(",");
+					//if the client is a followup client
+					if(words.length > followupInd && words[followupInd] == "T")
+					{
+						var id:String = words[idInd];
+						var facility:String = words[facilityInd];
+						var bhs:String = words[bhsInd];
+						var bhsNum:int = searchBhsList.getItemIndex(bhs);
+						if(bhsNum == -1)
+							bhs = "ZZ";
+						else
+							bhs = searchBhsInitials[bhsNum];
+						var date:String = words[dateind];
+						
+						//For each client, add it to a list to be created
+						var tempClient:ClientVO = new ClientVO();
+						tempClient.wits_id = id;
+						tempClient.facility = facility;
+						tempClient.bhs = bhs;
+						tempClient.client_status = "Active";
+						tempClient.notes = "";
+						batchIntakeDates.addItem(date);
+						batchClients.addItem(tempClient);
+					}
+				}
+				
+				//Just create one client to start, the createClientResult function will create the next ones recursively
+				if(batchClients.length > 0)
+					createClientResult.token = clientService.createClient(batchClients.removeItemAt(0) as ClientVO);
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="State1" enterState="state1_enterStateHandler(event)"/>
+		<s:State name="Login"/>
+		<s:State name="Reports"/>
+	</s:states>
+	<fx:Declarations>
+		<s:CallResponder id="getClientsSummaryResult" result="getClientsSummaryResult_resultHandler(event)"/>
+		<clientservice:ClientService id="clientService"
+									 fault="Alert.show('my fault' + event.fault.faultString + '\n' + event.fault.faultDetail)"
+									 showBusyCursor="true"/>
+		<!--<valueObjects:Client id="client"/>-->
+		<s:CallResponder id="updateClientResult"/>
+		<s:CallResponder id="createClientResult" result="createClientResult_resultHandler(event)"/>
+		<s:CallResponder id="getAllEventsResult"/>
+		<eventservice:EventService id="eventService"
+								   fault="Alert.show(event.fault.faultString + '\n' + event.fault.faultDetail)"
+								   showBusyCursor="true"/>
+		<s:CallResponder id="getClientByIDResult"
+						 result="client = getClientByIDResult.lastResult as ClientVO"/>
+		<s:CallResponder id="getEventsByIDResult" result="getEventsByIDResult_resultHandler(event)"/>
+		<valueObjects:EventVO id="eventVO"/>
+		<valueObjects:UserVO id="userVO"/>
+		<s:CallResponder id="getEventByEventIDResult"
+						 result="eventVO = getEventByEventIDResult.lastResult as EventVO"/>
+		<s:CallResponder id="updateEventResult" result="updateEventResult_resultHandler(event)"/>
+		<s:CallResponder id="createEventResult" result="createEventResult_resultHandler(event)"/>
+		<s:CallResponder id="searchClientsResult" result="clientList = searchClientsResult.lastResult"/>
+		<s:CallResponder id="loginUserResult"
+						 result="loginUserResult_resultHandler(event)"/>
+		<s:CallResponder id="emailPasswordResult"
+						 result="emailPasswordResult_resultHandler(event)"/>
+		<s:CallResponder id="updateUserResult" result="updateUserResult_resultHandler(event)"/>
+		<s:CallResponder id="getUsers" result="getUsers_resultHandler(event)"/>
+		<userservice:UserService id="userService"
+								 fault="Alert.show(event.fault.faultString + '\n' + event.fault.faultDetail)"
+								 showBusyCursor="true"/>
+		<s:CallResponder id="deleteClientResult"/>
+		<s:CallResponder id="deleteEventResult"/>
+		<miscservice:MiscService id="miscService"
+								 fault="Alert.show(event.fault.faultString + '\n' + event.fault.faultDetail)"
+								 showBusyCursor="true"/>
+		<s:CallResponder id="getDefaultEvents" result="getDefaultEvents_resultHandler(event)"/>
+		<s:CallResponder id="getFacilities" result="getFacilities_resultHandler(event)"/>
+		<s:CallResponder id="checkProblemsResult" result="checkProblemsResult_resultHandler(event)"/>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+
+	
+	<!-- LOGIN SCREEN -->
+	<s:Group includeIn="Login" x="0" y="0" width="1024" height="768" chromeColor="#FFA729">
+		<s:Image x="0" y="0" source="assets/background-design-orange1024.jpg"/>
+		<s:Panel id="loginPanel" y="326" width="277" height="236" horizontalCenter="0" title="Log In">
+			<s:Form id="logingForm" x="10" y="6" width="258" height="187"
+					defaultButton="{loginButton}">
+				<s:FormItem label="Username:">
+					<s:TextInput id="usernameInput"/>
+				</s:FormItem>
+				<s:FormItem label="Password:">
+					<s:TextInput id="passwordInput" displayAsPassword="true"/>
+				</s:FormItem>
+				<s:Group width="248" height="76">
+					<s:Button id="loginButton" x="3" y="8" label="Login"
+							  click="loginButton_clickHandler(event)"/>
+					<s:Button id="updateAccountButton" x="138" y="8" label="Update Account"
+							  click="updateAccountButton_clickHandler(event)"/>
+					<s:Button id="forgotPasswordButton" x="129" y="54" label="Forgot Password"
+							  click="forgotPasswordButton_clickHandler(event)"/>
+				</s:Group>
+			</s:Form>
+		</s:Panel>
+		<s:Image y="10" horizontalCenter="0" source="assets/SBIRT logo trans.png"/><!--LOGOCHANGE-->
+		<s:Panel id="updateAccountPanel" x="719" y="204" width="295" height="322" visible="false"
+				 title="Update Account">
+			<s:Form x="10" y="10">
+				<s:FormItem label="New password:">
+					<s:TextInput id="newPasswordInput" displayAsPassword="true"/>
+				</s:FormItem>
+				<s:FormItem label="Confirm password:">
+					<s:TextInput id="confirmPassowrdInput" displayAsPassword="true"/>
+				</s:FormItem>
+				<s:Button id="changePasswordButton" label="Change Password" click="changePasswordButton_clickHandler(event)"/>
+			</s:Form>
+			<s:Form x="10" y="157">
+				<s:FormItem label="Default facility:">
+					<s:DropDownList id="accountFacility" dataProvider="{facilityList}" selectedItem="{userVO.facility}"/>
+				</s:FormItem>
+				<s:Button label="Change Facility" id="changeFacilityButton" click="changeFacilityButton_clickHandler(event)"/>
+			</s:Form>
+		</s:Panel>
+	</s:Group>
+	
+	<s:Image includeIn="State1, Reports" x="0" y="0" source="assets/background-design-orange1024.jpg"/>
+	<s:BorderContainer id="containerClientGrid" includeIn="State1" x="6" y="10" width="315"
+					   height="619" borderColor="#000000" borderVisible="true" borderWeight="2"
+					   chromeColor="#FFA729" contentBackgroundColor="#F8F4DE" cornerRadius="6"
+					   dropShadowVisible="true" borderStyle="inset">
+		<!-- CLIENT SEARCH FORM-->
+		<s:Form id="clientSearchForm" x="10" y="10" width="282" defaultButton="{clientSearchButton}">
+			<s:FormItem label="Client ID">
+				<s:TextInput id="clientSearch_ClientIDInput" width="150" text=""/>
+			</s:FormItem>
+			<s:Group width="281" height="136">
+				<s:List id="clientSearch_StatusInput" x="4" y="31" height="90"
+						allowMultipleSelection="true" dataProvider="{searchStatus}"
+						selectedItem="Overdue"/>
+				<s:Label x="5" y="9" fontSize="13" fontWeight="bold" text="Status"/>
+				<s:Label x="5" y="9" fontSize="13" fontWeight="bold" text="Status"/>
+				<s:DropDownList id="clientSearch_BHSInput" x="128" y="31" width="150"
+								dataProvider="{searchBhsList}" selectedIndex="0"/>
+				<s:DropDownList id="clientSearch_FacilityInput" x="128" y="104" width="150"
+								dataProvider="{searchFacilityList}" selectedIndex="0"/>
+				<s:Label x="128" y="10" fontSize="13" fontWeight="bold" text="BHS"/>
+				<s:Label x="128" y="83" fontSize="13" fontWeight="bold" text="Facility"/>
+			</s:Group>
+			<s:Button id="clientSearchButton" label="Search" click="clientSearchButton_clickHandler(event)"/>
+		</s:Form>
+		<!-- CLIENT GRID -->
+		<s:Group id="clientGridGroup" x="10" y="247" height="336">
+			<s:DataGrid id="clientGrid" height="300"
+						creationComplete="clientGrid_creationCompleteHandler(event)" enabled="true"
+						requestedRowCount="4" dataProvider="{searchClientsResult.lastResult}"
+						selectionChange="clientGrid_selectionChangeHandler(event)">
+				<s:columns>
+					<s:ArrayList>
+						<s:GridColumn width="150" dataField="wits_id" headerText="Client ID" resizable="false"></s:GridColumn>
+						<s:GridColumn width="70" dataField="client_status" headerText="Status" resizable="false" itemRenderer="renderers.ClientGridRenderer"></s:GridColumn>
+						<s:GridColumn width="60" dataField="bhs" headerText="BHS" resizable="false"></s:GridColumn>
+					</s:ArrayList>
+				</s:columns>
+				<!--<s:AsyncListView list="{searchClientsResult.lastResult}"/>-->
+			</s:DataGrid>
+			<s:Button id="createClientButton" x="6" y="310" label="Create Client"
+					  click="createClientButton_clickHandler(event)"/>
+			<s:Button id="reportsButton" includeIn="State1" x="170" y="335" label="Go to Reports" click="reportsButton_clickHandler(event)"/>
+		</s:Group>
+		<s:Label id="panelLabelSearch" x="130" y="8" fontFamily="Arial" fontSize="18" fontWeight="bold"
+				 text="Search" textDecoration="none"/>
+	</s:BorderContainer>
+	
+	<!-- CLIENT FORM -->
+	<s:BorderContainer includeIn="State1" x="346" y="10" width="314" height="619" borderColor="#000000" borderVisible="true" borderWeight="2"
+					   chromeColor="#FFA729" contentBackgroundColor="#F8F4DE" cornerRadius="6"
+					   dropShadowVisible="true" borderStyle="inset">
+		<s:Form id="clientForm" x="0" y="12" width="295" chromeColor="#FFA729">
+			<s:layout>
+				<s:FormLayout gap="-3"/>
+			</s:layout>
+			<s:FormItem label="Client ID">
+				<s:TextInput id="client_idTextInput" width="150" text="{client.wits_id}"/>
+			</s:FormItem>
+			<s:FormItem label="Status">
+				<s:DropDownList id="statusListInput" dataProvider="{clientStatus}" selectedItem="{client.client_status}"/>
+			</s:FormItem>
+			<s:FormItem label="BHS">
+				<s:DropDownList id="bhsListInput" width="150" dataProvider="{bhsList}"
+								selectedItem="{bhsList.getItemAt(bhsInitials.indexOf(client.bhs))}"/>
+			</s:FormItem>
+			<s:FormItem label="Facility">
+				<s:DropDownList id="facilityListInput" width="150" dataProvider="{facilityList}"
+								selectedItem="{client.facility}"/>
+			</s:FormItem>
+			<s:FormItem>
+				<s:layout>
+					<s:BasicLayout/>
+				</s:layout>
+				<s:DataGrid id="eventGrid" x="-60" requestedRowCount="7" dataProvider="{eventList}"
+							selectionChange="eventGrid_selectionChangeHandler(event)">
+					<s:columns>
+						<s:ArrayList>
+							<s:GridColumn width="85" dataField="type" headerText="Event Type" resizable="false"></s:GridColumn>
+							<s:GridColumn width="115" dataField="targetdate" itemRenderer="renderers.EventDateRenderer" headerText="Target Date" resizable="false" sortDescending="false"></s:GridColumn>
+							<s:GridColumn width="70" dataField="status" headerText="Status" itemRenderer="renderers.ClientGridRenderer" resizable="false"></s:GridColumn>
+						</s:ArrayList>
+					</s:columns>
+					<!--<s:AsyncListView list="{getEventsByIDResult.lastResult}"/>-->
+				</s:DataGrid>
+			</s:FormItem>
+			<s:FormItem>
+				<s:layout>
+					<s:BasicLayout/>
+				</s:layout>
+				<s:Label x="-55" y="0" fontSize="13" fontWeight="bold" text="Notes"/>
+				<s:TextArea id="notesTextInput" x="-61" y="15" width="272" height="110"
+							text="{client.notes}"/>
+			</s:FormItem>
+			<s:FormItem>
+				<s:layout>
+					<s:BasicLayout/>
+				</s:layout>
+				<s:Group x="-72" y="-10" width="279" height="90">
+					<s:Button id="updateClientButton" x="10" y="10" label="Update Client"
+							  click="updateClientButton_clickHandler(event)"/>
+					<s:Button id="createEventButton" x="10" y="39" label="Create Event"
+							  click="createEventButton_clickHandler(event)"/>
+					<s:Button id="deleteClientButton" x="193" y="39" label="Delete Client"
+							  click="deleteClientButton_clickHandler(event)"/>
+					<s:Button id="cancelClientButton" visible="false" x="204" y="10" label="Cancel"
+							  click="cancelClientButton_clickHandler(event)"/>
+					<s:Button id="submitClientButton" label="Submit" click="submitClientButton_clickHandler(event)" visible="false" x="204" y="39"/>
+				</s:Group>
+			</s:FormItem>
+		</s:Form>
+		<s:Label id="panelLabelClient" x="130" y="8" fontFamily="Arial" fontSize="18" fontWeight="bold"
+				 text="Client" textDecoration="none"/>
+	</s:BorderContainer>
+	
+	<!-- EVENT FORM -->
+	<s:BorderContainer includeIn="State1" x="686" y="10" width="312" height="619" borderColor="#000000" borderVisible="true" borderWeight="2"
+					   chromeColor="#FFA729" contentBackgroundColor="#F8F4DE" cornerRadius="6"
+					   dropShadowVisible="true" borderStyle="inset">
+		<s:Form id="eventForm" x="0" y="13" width="297" chromeColor="#FFA729">
+			<s:FormItem label="Type">
+				<s:DropDownList id="typeListInput" dataProvider="{eventType}" selectedItem="{eventVO.type}"/>
+			</s:FormItem>
+			<s:FormItem label="Target Date">
+				<mx:DateField id="datePicker" x="954" y="483" width="121"
+							  change="datePicker_changeHandler(event)" editable="true"
+							  selectedDate="@{eventDate}" disabledDays="{[0,6]}"/>
+			</s:FormItem>
+			<s:FormItem label="Status">
+				<s:DropDownList id="statusListInput2" dataProvider="{eventStatus}" selectedItem="{eventVO.status}"/>
+			</s:FormItem>
+			<s:FormItem label="Overdue">
+				<s:CheckBox id="attentionCheckBox2" selected="{eventVO.attention}" enabled="false"/>
+			</s:FormItem>
+			<s:FormItem>
+				<s:layout>
+					<s:BasicLayout/>
+				</s:layout>
+				<s:Label x="-72" y="0" fontSize="13" fontWeight="bold" text="Notes"/>
+				<s:TextArea id="notesTextInput2" x="-77" y="22" width="265" height="129"
+							text="{eventVO.notes}"/>
+			</s:FormItem>
+			<s:FormItem>
+				<s:layout>
+					<s:BasicLayout/>
+				</s:layout>
+				<s:Group x="-85" y="-10" width="284" height="90">
+					<s:Button id="updateEventButton" x="10" y="10" label="Update Event" click="updateEventButton_clickHandler(event)"/>
+					<s:Button id="cancelEventButton" x="204" y="10" label="Cancel" click="cancelEventButton_clickHandler(event)" visible="false"/>
+					<s:Button id="submitEventButton" x="204" y="39" label="Submit" click="submitEventButton_clickHandler(event)" visible="false"/>
+					<s:Button id="deleteEventButton" x="184" y="39" label="Delete Event"
+							  click="deleteEventButton_clickHandler(event)"/>
+				</s:Group>
+			</s:FormItem>
+		</s:Form>
+		<s:Label id="panelLabelEvent" x="130" y="8" fontFamily="Arial" fontSize="18" fontWeight="bold"
+				 text="Event" textDecoration="none"/>
+	</s:BorderContainer>
+	
+	<s:Group includeIn="Reports" x="0" y="0" width="1024" height="768" chromeColor="#FFA729">
+		<s:Panel includeIn="Reports" x="330" y="231" width="319" height="233" title="Reports">
+			<s:layout>
+				<s:TileLayout horizontalGap="20" paddingLeft="10" paddingRight="10" paddingTop="15"
+							  requestedColumnCount="2" verticalGap="30"/>
+			</s:layout>
+			<s:Label text="Generate Problems File"/>
+			<s:Button id="checkProblemsButton" label="Run" click="checkProblemsButton_clickHandler(event)"/>
+			<s:Label text="Export Clients to File"/>
+			<s:Button id="exportClientsButton" label="Run" click="exportClientsButton_clickHandler(event)"/>
+			<s:Label text="Upload New Clients"/>
+			<s:Button id="uploadClientsButton" label="Browse" click="uploadClientsButton_clickHandler(event)"/>
+		</s:Panel>
+		<s:Button id="returnButton" includeIn="Reports" x="421" y="426" label="Return to Main Page" click="returnButton_clickHandler(event)"/>
+		<mx:ProgressBar id="uploadProgress" x="392" y="417" indeterminate="true" visible="false"/>
+	</s:Group>
+	
+
+</s:Application>
