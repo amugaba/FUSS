@@ -113,6 +113,94 @@
     <property name="notes" type="string" required="true"/>
     <property name="flagged" type="boolean" required="true"/>
   </entity>
+  <service name="UserService">
+    <annotation name="ActionScriptGeneration">
+      <item name="Source">UserService</item>
+      <item name="ServiceType">RemoteObject</item>
+      <item name="Package">services.userservice</item>
+      <item name="Endpoint">http://localhost/FUSS/FollowupDatabase/public/gateway.php</item>
+      <item name="Destination">UserService</item>
+    </annotation>
+    <annotation name="ServiceTypeGroup">
+      <item name="ServiceBackendType">com.zend.php.flashbuilder.php</item>
+    </annotation>
+    <annotation name="ServiceConfig">
+      <item name="PHP_RELATIVE_LOCATION"></item>
+      <item name="PHP_SERVER_ROOT">C:\wamp\www</item>
+      <item name="PHP_WORKSPACE_LOCATION">/FollowupDatabase/services/UserService.php</item>
+      <item name="DEFAULT_ENTITY_PACKAGE">valueObjects</item>
+      <item name="PHP_SERVICES_FOLDER">C:\wamp\www\FUSS\FollowupDatabase\public\bin-debug\services</item>
+      <item name="PHP_LOCATION">C:/wamp/www</item>
+      <item name="LINKED_FILE">UserService.php</item>
+      <item name="PHP_SERVER_ROOT_URL">http://localhost</item>
+      <item name="ABSOLUTE_ENDPOINT">http://localhost/FUSS/FollowupDatabase/public/gateway.php</item>
+      <item name="PHP_CLASS_NAME">UserService</item>
+    </annotation>
+    <function name="loginUser" return-type="UserVO">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+      <parameter name="username" type="string"/>
+      <parameter name="password" type="string"/>
+    </function>
+    <function name="updateUser" return-type="boolean">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+      <parameter name="user" type="UserVO"/>
+    </function>
+    <function name="getUsers" return-type="UserVO[]">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+    </function>
+    <function name="emailPassword" return-type="boolean">
+      <annotation name="analyze group">
+        <item name="analyzed">true</item>
+      </annotation>
+      <annotation name="original signature">
+        <item name="returnType">opaque</item>
+      </annotation>
+      <parameter name="username" type="string"/>
+    </function>
+  </service>
+  <entity name="UserVO">
+    <annotation name="EntityProperties">
+      <item name="EntityOriginalName">UserVO</item>
+      <item name="location">C:/Users/tiddd/Documents/GitHub/FUSS/FollowupDatabase/services/UserVO.php</item>
+    </annotation>
+    <annotation name="ServerProperties">
+      <item name="RemoteClass">UserVO</item>
+      <item name="IncludeRemoteClass">nonempty</item>
+    </annotation>
+    <annotation name="loginUser">
+      <item name="propertySpecifier">username,name,password,initials,facility,email</item>
+    </annotation>
+    <annotation name="getUsers">
+      <item name="propertySpecifier">username,name,password,initials,facility,email</item>
+    </annotation>
+    <annotation name="service Group">
+      <item name="service">UserService</item>
+    </annotation>
+    <annotation name="ActionScriptGeneration">
+      <item name="Package">valueObjects</item>
+    </annotation>
+    <property name="username" type="string" required="true"/>
+    <property name="name" type="string" required="true"/>
+    <property name="password" type="string" required="true"/>
+    <property name="initials" type="string" required="true"/>
+    <property name="facility" type="string" required="true"/>
+    <property name="email" type="string" required="true"/>
+  </entity>
   <service name="MiscService">
     <annotation name="ActionScriptGeneration">
       <item name="Source">MiscService</item>
@@ -338,93 +426,5 @@
     <property name="facility" type="string"/>
     <property name="intakeDate" type="string" required="true"/>
     <property name="appointmentDate" type="string" required="true"/>
-  </entity>
-  <service name="UserService">
-    <annotation name="ActionScriptGeneration">
-      <item name="Source">UserService</item>
-      <item name="ServiceType">RemoteObject</item>
-      <item name="Package">services.userservice</item>
-      <item name="Endpoint">http://localhost/FUSS/FollowupDatabase/public/gateway.php</item>
-      <item name="Destination">UserService</item>
-    </annotation>
-    <annotation name="ServiceTypeGroup">
-      <item name="ServiceBackendType">com.zend.php.flashbuilder.php</item>
-    </annotation>
-    <annotation name="ServiceConfig">
-      <item name="PHP_RELATIVE_LOCATION"></item>
-      <item name="PHP_SERVER_ROOT">C:\wamp\www</item>
-      <item name="PHP_WORKSPACE_LOCATION">/FollowupDatabase/services/UserService.php</item>
-      <item name="DEFAULT_ENTITY_PACKAGE">valueObjects</item>
-      <item name="PHP_SERVICES_FOLDER">C:\wamp\www\FUSS\FollowupDatabase\public\bin-debug\services</item>
-      <item name="PHP_LOCATION">C:/wamp/www</item>
-      <item name="LINKED_FILE">UserService.php</item>
-      <item name="PHP_SERVER_ROOT_URL">http://localhost</item>
-      <item name="ABSOLUTE_ENDPOINT">http://localhost/FUSS/FollowupDatabase/public/gateway.php</item>
-      <item name="PHP_CLASS_NAME">UserService</item>
-    </annotation>
-    <function name="loginUser" return-type="UserVO">
-      <annotation name="analyze group">
-        <item name="analyzed">true</item>
-      </annotation>
-      <annotation name="original signature">
-        <item name="returnType">opaque</item>
-      </annotation>
-      <parameter name="username" type="string"/>
-      <parameter name="password" type="string"/>
-    </function>
-    <function name="updateUser" return-type="boolean">
-      <annotation name="analyze group">
-        <item name="analyzed">true</item>
-      </annotation>
-      <annotation name="original signature">
-        <item name="returnType">opaque</item>
-      </annotation>
-      <parameter name="user" type="UserVO"/>
-    </function>
-    <function name="getUsers" return-type="UserVO[]">
-      <annotation name="analyze group">
-        <item name="analyzed">true</item>
-      </annotation>
-      <annotation name="original signature">
-        <item name="returnType">opaque</item>
-      </annotation>
-    </function>
-    <function name="emailPassword" return-type="boolean">
-      <annotation name="analyze group">
-        <item name="analyzed">true</item>
-      </annotation>
-      <annotation name="original signature">
-        <item name="returnType">opaque</item>
-      </annotation>
-      <parameter name="username" type="string"/>
-    </function>
-  </service>
-  <entity name="UserVO">
-    <annotation name="EntityProperties">
-      <item name="EntityOriginalName">UserVO</item>
-      <item name="location">C:/Users/tiddd/Documents/GitHub/FUSS/FollowupDatabase/services/UserVO.php</item>
-    </annotation>
-    <annotation name="ServerProperties">
-      <item name="RemoteClass">UserVO</item>
-      <item name="IncludeRemoteClass">nonempty</item>
-    </annotation>
-    <annotation name="loginUser">
-      <item name="propertySpecifier">username,name,password,initials,facility,email</item>
-    </annotation>
-    <annotation name="getUsers">
-      <item name="propertySpecifier">username,name,password,initials,facility,email</item>
-    </annotation>
-    <annotation name="service Group">
-      <item name="service">UserService</item>
-    </annotation>
-    <annotation name="ActionScriptGeneration">
-      <item name="Package">valueObjects</item>
-    </annotation>
-    <property name="username" type="string" required="true"/>
-    <property name="name" type="string" required="true"/>
-    <property name="password" type="string" required="true"/>
-    <property name="initials" type="string" required="true"/>
-    <property name="facility" type="string" required="true"/>
-    <property name="email" type="string" required="true"/>
   </entity>
 </model>

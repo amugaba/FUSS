@@ -1,0 +1,5 @@
+$ cat .gitignore
+FollowupDatabase/public/
+FollowupDatabaseFlex/.actionScriptProperties
+FollowupDatabaseFlex/.flexProperties
+FollowupDatabaseFlex/.model/FollowupDatabaseFlex.fml
