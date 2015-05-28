@@ -5,11 +5,15 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import mx.controls.DateField;
+			
 			override public function prepare(hasBeenRecycled:Boolean):void {
 				if(data != null)
 				{
-					if(data[column.dataField] > 0)
-						lblData.text = timestampToDate(data[column.dataField]).toDateString();
+					if(data[column.dataField] != "")
+					{
+						lblData.text = DateField.stringToDate(data[column.dataField],"YYYY-MM-DD").toDateString();
+					}
 					else
 						lblData.text = "";
 				}

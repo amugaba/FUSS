@@ -17,7 +17,7 @@ class EventVO
 	public $type;
 	
 	/**
-	 * @var int
+	 * @var string
 	 */
 	public $targetdate;
 	
@@ -46,7 +46,7 @@ class EventVO
 		$this->event_id = 0;
 		$this->client_id = 0;
 		$this->type = "";
-		$this->targetdate = 0;
+		$this->targetdate = "";
 		$this->status = "Active";
 		$this->attention = FALSE;
 		$this->notes = "";

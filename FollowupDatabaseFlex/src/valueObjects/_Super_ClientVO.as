@@ -66,6 +66,8 @@ public class _Super_ClientVO extends flash.events.EventDispatcher implements com
     private var _internal_client_id : int;
     private var _internal_wits_id : String;
     private var _internal_client_status : String;
+    private var _internal_intakeDate : String;
+    private var _internal_appointmentDate : String;
     private var _internal_attention : Boolean;
     private var _internal_events : ArrayCollection;
     private var _internal_notes : String;
@@ -90,6 +92,8 @@ public class _Super_ClientVO extends flash.events.EventDispatcher implements com
         // Bind to own data or source properties for cache invalidation triggering
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "wits_id", model_internal::setterListenerWits_id));
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "client_status", model_internal::setterListenerClient_status));
+        model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "intakeDate", model_internal::setterListenerIntakeDate));
+        model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "appointmentDate", model_internal::setterListenerAppointmentDate));
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "events", model_internal::setterListenerEvents));
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "notes", model_internal::setterListenerNotes));
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "bhs", model_internal::setterListenerBhs));
@@ -117,6 +121,18 @@ public class _Super_ClientVO extends flash.events.EventDispatcher implements com
     public function get client_status() : String
     {
         return _internal_client_status;
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get intakeDate() : String
+    {
+        return _internal_intakeDate;
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get appointmentDate() : String
+    {
+        return _internal_appointmentDate;
     }
 
     [Bindable(event="propertyChange")]
@@ -190,6 +206,26 @@ public class _Super_ClientVO extends flash.events.EventDispatcher implements com
         {
             _internal_client_status = value;
             this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "client_status", oldValue, _internal_client_status));
+        }
+    }
+
+    public function set intakeDate(value:String) : void
+    {
+        var oldValue:String = _internal_intakeDate;
+        if (oldValue !== value)
+        {
+            _internal_intakeDate = value;
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "intakeDate", oldValue, _internal_intakeDate));
+        }
+    }
+
+    public function set appointmentDate(value:String) : void
+    {
+        var oldValue:String = _internal_appointmentDate;
+        if (oldValue !== value)
+        {
+            _internal_appointmentDate = value;
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "appointmentDate", oldValue, _internal_appointmentDate));
         }
     }
 
@@ -290,6 +326,16 @@ public class _Super_ClientVO extends flash.events.EventDispatcher implements com
         _model.invalidateDependentOnClient_status();
     }
 
+    model_internal function setterListenerIntakeDate(value:flash.events.Event):void
+    {
+        _model.invalidateDependentOnIntakeDate();
+    }
+
+    model_internal function setterListenerAppointmentDate(value:flash.events.Event):void
+    {
+        _model.invalidateDependentOnAppointmentDate();
+    }
+
     model_internal function setterListenerEvents(value:flash.events.Event):void
     {
         if (value is mx.events.PropertyChangeEvent)
@@ -347,6 +393,16 @@ public class _Super_ClientVO extends flash.events.EventDispatcher implements com
         {
             propertyValidity = false;
             com.adobe.fiber.util.FiberUtils.arrayAdd(validationFailureMessages, _model.model_internal::_client_statusValidationFailureMessages);
+        }
+        if (!_model.intakeDateIsValid)
+        {
+            propertyValidity = false;
+            com.adobe.fiber.util.FiberUtils.arrayAdd(validationFailureMessages, _model.model_internal::_intakeDateValidationFailureMessages);
+        }
+        if (!_model.appointmentDateIsValid)
+        {
+            propertyValidity = false;
+            com.adobe.fiber.util.FiberUtils.arrayAdd(validationFailureMessages, _model.model_internal::_appointmentDateValidationFailureMessages);
         }
         if (!_model.eventsIsValid)
         {
@@ -497,6 +553,60 @@ public class _Super_ClientVO extends flash.events.EventDispatcher implements com
 
         model_internal::_doValidationCacheOfClient_status = validationFailures;
         model_internal::_doValidationLastValOfClient_status = value;
+
+        return validationFailures;
+    }
+    
+    model_internal var _doValidationCacheOfIntakeDate : Array = null;
+    model_internal var _doValidationLastValOfIntakeDate : String;
+
+    model_internal function _doValidationForIntakeDate(valueIn:Object):Array
+    {
+        var value : String = valueIn as String;
+
+        if (model_internal::_doValidationCacheOfIntakeDate != null && model_internal::_doValidationLastValOfIntakeDate == value)
+           return model_internal::_doValidationCacheOfIntakeDate ;
+
+        _model.model_internal::_intakeDateIsValidCacheInitialized = true;
+        var validationFailures:Array = new Array();
+        var errorMessage:String;
+        var failure:Boolean;
+
+        var valRes:ValidationResult;
+        if (_model.isIntakeDateAvailable && _internal_intakeDate == null)
+        {
+            validationFailures.push(new ValidationResult(true, "", "", "intakeDate is required"));
+        }
+
+        model_internal::_doValidationCacheOfIntakeDate = validationFailures;
+        model_internal::_doValidationLastValOfIntakeDate = value;
+
+        return validationFailures;
+    }
+    
+    model_internal var _doValidationCacheOfAppointmentDate : Array = null;
+    model_internal var _doValidationLastValOfAppointmentDate : String;
+
+    model_internal function _doValidationForAppointmentDate(valueIn:Object):Array
+    {
+        var value : String = valueIn as String;
+
+        if (model_internal::_doValidationCacheOfAppointmentDate != null && model_internal::_doValidationLastValOfAppointmentDate == value)
+           return model_internal::_doValidationCacheOfAppointmentDate ;
+
+        _model.model_internal::_appointmentDateIsValidCacheInitialized = true;
+        var validationFailures:Array = new Array();
+        var errorMessage:String;
+        var failure:Boolean;
+
+        var valRes:ValidationResult;
+        if (_model.isAppointmentDateAvailable && _internal_appointmentDate == null)
+        {
+            validationFailures.push(new ValidationResult(true, "", "", "appointmentDate is required"));
+        }
+
+        model_internal::_doValidationCacheOfAppointmentDate = validationFailures;
+        model_internal::_doValidationLastValOfAppointmentDate = value;
 
         return validationFailures;
     }

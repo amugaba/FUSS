@@ -65,7 +65,7 @@ public class _Super_EventVO extends flash.events.EventDispatcher implements com.
     private var _internal_event_id : int;
     private var _internal_client_id : int;
     private var _internal_type : String;
-    private var _internal_targetdate : int;
+    private var _internal_targetdate : String;
     private var _internal_status : String;
     private var _internal_attention : Boolean;
     private var _internal_notes : String;
@@ -87,6 +87,7 @@ public class _Super_EventVO extends flash.events.EventDispatcher implements com.
 
         // Bind to own data or source properties for cache invalidation triggering
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "type", model_internal::setterListenerType));
+        model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "targetdate", model_internal::setterListenerTargetdate));
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "status", model_internal::setterListenerStatus));
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "notes", model_internal::setterListenerNotes));
 
@@ -115,7 +116,7 @@ public class _Super_EventVO extends flash.events.EventDispatcher implements com.
     }
 
     [Bindable(event="propertyChange")]
-    public function get targetdate() : int
+    public function get targetdate() : String
     {
         return _internal_targetdate;
     }
@@ -182,9 +183,9 @@ public class _Super_EventVO extends flash.events.EventDispatcher implements com.
         }
     }
 
-    public function set targetdate(value:int) : void
+    public function set targetdate(value:String) : void
     {
-        var oldValue:int = _internal_targetdate;
+        var oldValue:String = _internal_targetdate;
         if (oldValue !== value)
         {
             _internal_targetdate = value;
@@ -249,6 +250,11 @@ public class _Super_EventVO extends flash.events.EventDispatcher implements com.
         _model.invalidateDependentOnType();
     }
 
+    model_internal function setterListenerTargetdate(value:flash.events.Event):void
+    {
+        _model.invalidateDependentOnTargetdate();
+    }
+
     model_internal function setterListenerStatus(value:flash.events.Event):void
     {
         _model.invalidateDependentOnStatus();
@@ -284,6 +290,11 @@ public class _Super_EventVO extends flash.events.EventDispatcher implements com.
         {
             propertyValidity = false;
             com.adobe.fiber.util.FiberUtils.arrayAdd(validationFailureMessages, _model.model_internal::_typeValidationFailureMessages);
+        }
+        if (!_model.targetdateIsValid)
+        {
+            propertyValidity = false;
+            com.adobe.fiber.util.FiberUtils.arrayAdd(validationFailureMessages, _model.model_internal::_targetdateValidationFailureMessages);
         }
         if (!_model.statusIsValid)
         {
@@ -397,6 +408,33 @@ public class _Super_EventVO extends flash.events.EventDispatcher implements com.
 
         model_internal::_doValidationCacheOfType = validationFailures;
         model_internal::_doValidationLastValOfType = value;
+
+        return validationFailures;
+    }
+    
+    model_internal var _doValidationCacheOfTargetdate : Array = null;
+    model_internal var _doValidationLastValOfTargetdate : String;
+
+    model_internal function _doValidationForTargetdate(valueIn:Object):Array
+    {
+        var value : String = valueIn as String;
+
+        if (model_internal::_doValidationCacheOfTargetdate != null && model_internal::_doValidationLastValOfTargetdate == value)
+           return model_internal::_doValidationCacheOfTargetdate ;
+
+        _model.model_internal::_targetdateIsValidCacheInitialized = true;
+        var validationFailures:Array = new Array();
+        var errorMessage:String;
+        var failure:Boolean;
+
+        var valRes:ValidationResult;
+        if (_model.isTargetdateAvailable && _internal_targetdate == null)
+        {
+            validationFailures.push(new ValidationResult(true, "", "", "targetdate is required"));
+        }
+
+        model_internal::_doValidationCacheOfTargetdate = validationFailures;
+        model_internal::_doValidationLastValOfTargetdate = value;
 
         return validationFailures;
     }

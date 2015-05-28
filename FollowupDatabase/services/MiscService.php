@@ -122,9 +122,9 @@ class MiscService
 	    	foreach ($events as $event)
 	    	{
 	    		if($event->type == "Intake")
-	    			$intakeDate = $event->targetdate;
+	    			$intakeDate = strtotime($event->targetdate);
 	    		if($event->type == "Appointment")
-	    			$apptDate = $event->targetdate;
+	    			$apptDate = strtotime($event->targetdate);
 	    		if($event->status == "Active")
 	    			$active = true;
 	    	}

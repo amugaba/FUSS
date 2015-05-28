@@ -18,7 +18,6 @@
 			import mx.events.FlexEvent;
 			import mx.rpc.events.ResultEvent;
 			
-			import valueObjects.ClientSummaryVO;
 			import valueObjects.ClientVO;
 			import valueObjects.DefaultEventVO;
 			import valueObjects.EventVO;
@@ -27,7 +26,6 @@
 			protected var batchUpload:Boolean = false;
 			protected var batchNumClients:int = 0;
 			protected var batchClients:ArrayList; //list of clients in batch file to create
-			protected var batchIntakeDates:ArrayList;
 			protected var client:ClientVO;//the client currently being created by the batch process
 			private var global:sbirtfollowup = FlexGlobals.topLevelApplication as sbirtfollowup;
 			
@@ -89,7 +87,7 @@
 				{
 					var file:FileReference = new FileReference();
 					var output:String = "Database_ID,Client_ID,Status,BHS,Facility,IntakeDate,AppointmentDate\r\n";
-					for each(var client:ClientSummaryVO in getClientsSummaryResult.lastResult)
+					for each(var client:ClientVO in getClientsSummaryResult.lastResult)
 					{
 						output += client.client_id + "," + client.wits_id + "," + client.client_status + "," + client.bhs + "," + client.facility + "," +
 							client.intakeDate + "," + client.appointmentDate + "\r\n" ;
@@ -129,7 +127,6 @@
 			{
 				batchNumClients = 0;
 				batchClients = new ArrayList();
-				batchIntakeDates = new ArrayList();
 				batchUpload = true;
 				
 				var ba:ByteArray = evt.currentTarget.data as ByteArray;
@@ -140,7 +137,7 @@
 				var idInd:int = 0;
 				var facilityInd:int = 14;
 				var bhsInd:int = 13;
-				var dateind:int = 1;
+				var dateind:int = 18;//use the GPRA created date
 				var followupInd:int = 16;
 				
 				for each(var line:String in lines)
@@ -166,14 +163,17 @@
 						tempClient.bhs = bhs;
 						tempClient.client_status = "Active";
 						tempClient.notes = "";
-						batchIntakeDates.addItem(date);
+						tempClient.intakeDate = date;
 						batchClients.addItem(tempClient);
 					}
 				}
 				
 				//Just create one client to start, the createClientResult function will create the next ones recursively
 				if(batchClients.length > 0)
-					createClientResult.token = clientService.createClient(batchClients.removeItemAt(0) as ClientVO);
+				{
+					client = batchClients.removeItemAt(0) as ClientVO;
+					createClientResult.token = clientService.createClient(client);
+				}
 			}
 			
 			protected function createClientResult_resultHandler(event:ResultEvent):void
@@ -186,8 +186,8 @@
 					batchNumClients += 1;//increase added client count
 					
 					//create default events for this client according to intake date
-					var words:Array = (batchIntakeDates.removeItemAt(0) as String).split("/");
-					var intakeDate:Date = new Date(parseInt(words[2]), parseInt(words[0])-1, parseInt(words[1]));//Flex counts months from 0 to 11
+					var words:Array = client.intakeDate.split("/");
+					var intakeDate:Date = new Date(parseInt(words[2]), parseInt(words[0])-1, parseInt(words[1])+1);//Flex counts months from 0 to 11, the day always ends up 1 early for some reason
 					
 					if(client.client_status == "Referral")
 						createDefaultReferralEvents(intakeDate);
@@ -197,7 +197,10 @@
 				
 				//If there are any more clients to be created, create the next one
 				if(batchClients.length > 0)
-					createClientResult.token = clientService.createClient(batchClients.removeItemAt(0) as ClientVO);
+				{
+					client = batchClients.removeItemAt(0) as ClientVO;
+					createClientResult.token = clientService.createClient(client);
+				}
 				else
 				{
 					//When done, announce number of clients created
@@ -230,7 +233,9 @@
 					eventTemp.status = "Completed";
 				else
 					eventTemp.status = "Active";
-				eventTemp.targetdate = global.dateToTimestamp(new Date(baseDate.getTime() + eventElapse*1000*60*60*24));
+				var newDate:Date = new Date(baseDate.fullYear, baseDate.month, baseDate.date);
+				newDate.date += eventElapse;
+				eventTemp.targetdate = global.dateFormatter.format(newDate);
 				eventTemp.notes = notes;
 				createEventResult.token = eventService.createEvent(eventTemp);
 			}

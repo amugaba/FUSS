@@ -41,7 +41,6 @@ class EventService
 		mysqli_stmt_bind_result($stmt, $row->event_id, $row->client_id, $row->type, $row->targetdate, $row->status, $row->attention, $row->notes, $row->flagged);
 		
 	    while (mysqli_stmt_fetch($stmt)) {
-	      $row->targetdate = strtotime($row->targetdate);
 	      $rows[] = $row;
 	      $row = new EventVO();
 	      mysqli_stmt_bind_result($stmt, $row->event_id, $row->client_id, $row->type, $row->targetdate, $row->status, $row->attention, $row->notes, $row->flagged);
@@ -76,7 +75,6 @@ class EventService
 		mysqli_stmt_bind_result($stmt, $row->event_id, $row->client_id, $row->type, $row->targetdate, $row->status, $row->attention, $row->notes, $row->flagged);
 		
 		while (mysqli_stmt_fetch($stmt)) {
-	      $row->targetdate = strtotime($row->targetdate);
 	      $rows[] = $row;
 	      $row = new EventVO();
 	      mysqli_stmt_bind_result($stmt, $row->event_id, $row->client_id, $row->type, $row->targetdate, $row->status, $row->attention, $row->notes, $row->flagged);
@@ -108,11 +106,8 @@ class EventService
 		$row = new EventVO();
 		mysqli_stmt_bind_result($stmt, $row->event_id, $row->client_id, $row->type, $row->targetdate, $row->status, $row->attention, $row->notes, $row->flagged);
 		
-	    if ($stmt->fetch()) {
-	    	//$row->targetdate = new DateTime($row->targetdate);
-	    	$row->targetdate = strtotime($row->targetdate);
-        }
-        else $row = NULL;
+	    if (!$stmt->fetch())
+	    	$row = NULL;
 		
 		mysqli_stmt_free_result($stmt);
 	    mysqli_close($this->connection);
@@ -130,10 +125,8 @@ class EventService
 
 		$stmt = mysqli_prepare($this->connection, "INSERT INTO $this->tablename (client_id, type, targetdate, status, attention, notes, flagged) VALUES (?, ?, ?, ?, ?, ?, ?)");
 		$this->throwExceptionOnError();
-
-		$date = date('Y-m-d',$item->targetdate);
-		//$item->targetdate->toString('YYYY-MM-dd HH:mm:ss')
-		mysqli_stmt_bind_param($stmt, 'isssisi', $item->client_id, $item->type, $date, $item->status, $item->attention, $item->notes, $item->flagged);
+		
+		mysqli_stmt_bind_param($stmt, 'isssisi', $item->client_id, $item->type, $item->targetdate, $item->status, $item->attention, $item->notes, $item->flagged);
 		$this->throwExceptionOnError();
 
 		mysqli_stmt_execute($stmt);		
@@ -158,8 +151,7 @@ class EventService
 		$stmt = mysqli_prepare($this->connection, "UPDATE $this->tablename SET client_id=?, type=?, targetdate=?, status=?, attention=?, notes=?, flagged=? WHERE event_id=?");		
 		$this->throwExceptionOnError();
 		
-		$date = date('Y-m-d',$item->targetdate);
-		mysqli_stmt_bind_param($stmt, 'isssisii', $item->client_id, $item->type, $date, $item->status, $item->attention, $item->notes, $item->flagged, $item->event_id);		
+		mysqli_stmt_bind_param($stmt, 'isssisii', $item->client_id, $item->type, $item->targetdate, $item->status, $item->attention, $item->notes, $item->flagged, $item->event_id);		
 		$this->throwExceptionOnError();
 
 		mysqli_stmt_execute($stmt);		

@@ -17,6 +17,16 @@ class ClientVO
 	public $client_status;
 	
 	/**
+	 * @var string
+	 */
+	public $intakeDate;
+	
+	/**
+	 * @var string
+	 */
+	public $appointmentDate;
+	
+	/**
 	 * @var bool
 	 */
 	public $attention;
@@ -51,6 +61,7 @@ class ClientVO
 		$this->client_id = 0;
 		$this->wits_id = "";
 		$this->client_status = "Active";
+		$this->intakeDate = "";
 		$this->attention = FALSE;
 		$this->events = array();
 		$this->notes = "";

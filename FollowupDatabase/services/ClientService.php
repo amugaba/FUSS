@@ -7,7 +7,6 @@
  */
 
 include_once 'ClientVO.php';
-include_once 'ClientSummaryVO.php';
 include_once 'ConnectionManager.php';
 
 class ClientService
@@ -30,7 +29,7 @@ class ClientService
 	 * 
 	 * Get all clients with their intake and appointment dates
 	 * 
-	 * @return ClientSummary[]
+	 * @return ClientVO[]
 	 */
     
     public function getClientsSummary ()
@@ -44,14 +43,14 @@ class ClientService
         $this->throwExceptionOnError();
 
         $rows = array();
-        $row = new ClientSummaryVO();
+        $row = new ClientVO();
         
         $stmt->bind_result($row->client_id, $row->wits_id, $row->client_status, $row->bhs, $row->facility);
 
         while ($stmt->fetch()) 
         {
             $rows[] = $row;
-            $row = new ClientSummaryVO();
+            $row = new ClientVO();
             $stmt->bind_result($row->client_id, $row->wits_id, $row->client_status, $row->bhs, $row->facility);
         }
 

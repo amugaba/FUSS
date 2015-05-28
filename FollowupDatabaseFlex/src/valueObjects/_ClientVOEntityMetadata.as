@@ -23,14 +23,14 @@ internal class _ClientVOEntityMetadata extends com.adobe.fiber.valueobjects.Abst
 {
     private static var emptyArray:Array = new Array();
 
-    model_internal static var allProperties:Array = new Array("client_id", "wits_id", "client_status", "attention", "events", "notes", "flagged", "bhs", "facility");
+    model_internal static var allProperties:Array = new Array("client_id", "wits_id", "client_status", "intakeDate", "appointmentDate", "attention", "events", "notes", "flagged", "bhs", "facility");
     model_internal static var allAssociationProperties:Array = new Array();
-    model_internal static var allRequiredProperties:Array = new Array("client_id", "wits_id", "client_status", "attention", "events", "notes", "flagged", "bhs", "facility");
-    model_internal static var allAlwaysAvailableProperties:Array = new Array("client_id", "wits_id", "client_status", "attention", "events", "notes", "flagged", "bhs", "facility");
+    model_internal static var allRequiredProperties:Array = new Array("client_id", "wits_id", "client_status", "intakeDate", "appointmentDate", "attention", "events", "notes", "flagged", "bhs", "facility");
+    model_internal static var allAlwaysAvailableProperties:Array = new Array("client_id", "wits_id", "client_status", "intakeDate", "appointmentDate", "attention", "events", "notes", "flagged", "bhs", "facility");
     model_internal static var guardedProperties:Array = new Array();
-    model_internal static var dataProperties:Array = new Array("client_id", "wits_id", "client_status", "attention", "events", "notes", "flagged", "bhs", "facility");
+    model_internal static var dataProperties:Array = new Array("client_id", "wits_id", "client_status", "intakeDate", "appointmentDate", "attention", "events", "notes", "flagged", "bhs", "facility");
     model_internal static var sourceProperties:Array = emptyArray
-    model_internal static var nonDerivedProperties:Array = new Array("client_id", "wits_id", "client_status", "attention", "events", "notes", "flagged", "bhs", "facility");
+    model_internal static var nonDerivedProperties:Array = new Array("client_id", "wits_id", "client_status", "intakeDate", "appointmentDate", "attention", "events", "notes", "flagged", "bhs", "facility");
     model_internal static var derivedProperties:Array = new Array();
     model_internal static var collectionProperties:Array = new Array("events");
     model_internal static var collectionBaseMap:Object;
@@ -49,6 +49,16 @@ internal class _ClientVOEntityMetadata extends com.adobe.fiber.valueobjects.Abst
     model_internal var _client_statusValidator:com.adobe.fiber.styles.StyleValidator;
     model_internal var _client_statusIsValidCacheInitialized:Boolean = false;
     model_internal var _client_statusValidationFailureMessages:Array;
+    
+    model_internal var _intakeDateIsValid:Boolean;
+    model_internal var _intakeDateValidator:com.adobe.fiber.styles.StyleValidator;
+    model_internal var _intakeDateIsValidCacheInitialized:Boolean = false;
+    model_internal var _intakeDateValidationFailureMessages:Array;
+    
+    model_internal var _appointmentDateIsValid:Boolean;
+    model_internal var _appointmentDateValidator:com.adobe.fiber.styles.StyleValidator;
+    model_internal var _appointmentDateIsValidCacheInitialized:Boolean = false;
+    model_internal var _appointmentDateValidationFailureMessages:Array;
     
     model_internal var _eventsIsValid:Boolean;
     model_internal var _eventsValidator:com.adobe.fiber.styles.StyleValidator;
@@ -83,6 +93,8 @@ internal class _ClientVOEntityMetadata extends com.adobe.fiber.valueobjects.Abst
             model_internal::dependentsOnMap["client_id"] = new Array();
             model_internal::dependentsOnMap["wits_id"] = new Array();
             model_internal::dependentsOnMap["client_status"] = new Array();
+            model_internal::dependentsOnMap["intakeDate"] = new Array();
+            model_internal::dependentsOnMap["appointmentDate"] = new Array();
             model_internal::dependentsOnMap["attention"] = new Array();
             model_internal::dependentsOnMap["events"] = new Array();
             model_internal::dependentsOnMap["notes"] = new Array();
@@ -100,6 +112,8 @@ internal class _ClientVOEntityMetadata extends com.adobe.fiber.valueobjects.Abst
         model_internal::propertyTypeMap["client_id"] = "int";
         model_internal::propertyTypeMap["wits_id"] = "String";
         model_internal::propertyTypeMap["client_status"] = "String";
+        model_internal::propertyTypeMap["intakeDate"] = "String";
+        model_internal::propertyTypeMap["appointmentDate"] = "String";
         model_internal::propertyTypeMap["attention"] = "Boolean";
         model_internal::propertyTypeMap["events"] = "ArrayCollection";
         model_internal::propertyTypeMap["notes"] = "String";
@@ -118,6 +132,16 @@ internal class _ClientVOEntityMetadata extends com.adobe.fiber.valueobjects.Abst
         model_internal::_client_statusValidator.requiredFieldError = "client_status is required";
         //model_internal::_client_statusValidator.source = model_internal::_instance;
         //model_internal::_client_statusValidator.property = "client_status";
+        model_internal::_intakeDateValidator = new StyleValidator(model_internal::_instance.model_internal::_doValidationForIntakeDate);
+        model_internal::_intakeDateValidator.required = true;
+        model_internal::_intakeDateValidator.requiredFieldError = "intakeDate is required";
+        //model_internal::_intakeDateValidator.source = model_internal::_instance;
+        //model_internal::_intakeDateValidator.property = "intakeDate";
+        model_internal::_appointmentDateValidator = new StyleValidator(model_internal::_instance.model_internal::_doValidationForAppointmentDate);
+        model_internal::_appointmentDateValidator.required = true;
+        model_internal::_appointmentDateValidator.requiredFieldError = "appointmentDate is required";
+        //model_internal::_appointmentDateValidator.source = model_internal::_instance;
+        //model_internal::_appointmentDateValidator.property = "appointmentDate";
         model_internal::_eventsValidator = new StyleValidator(model_internal::_instance.model_internal::_doValidationForEvents);
         model_internal::_eventsValidator.required = true;
         model_internal::_eventsValidator.requiredFieldError = "events is required";
@@ -383,6 +407,18 @@ internal class _ClientVOEntityMetadata extends com.adobe.fiber.valueobjects.Abst
     }
 
     [Bindable(event="propertyChange")]
+    public function get isIntakeDateAvailable():Boolean
+    {
+        return true;
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get isAppointmentDateAvailable():Boolean
+    {
+        return true;
+    }
+
+    [Bindable(event="propertyChange")]
     public function get isAttentionAvailable():Boolean
     {
         return true;
@@ -436,6 +472,22 @@ internal class _ClientVOEntityMetadata extends com.adobe.fiber.valueobjects.Abst
         {
             model_internal::_instance.model_internal::_doValidationCacheOfClient_status = null;
             model_internal::calculateClient_statusIsValid();
+        }
+    }
+    public function invalidateDependentOnIntakeDate():void
+    {
+        if (model_internal::_intakeDateIsValidCacheInitialized )
+        {
+            model_internal::_instance.model_internal::_doValidationCacheOfIntakeDate = null;
+            model_internal::calculateIntakeDateIsValid();
+        }
+    }
+    public function invalidateDependentOnAppointmentDate():void
+    {
+        if (model_internal::_appointmentDateIsValidCacheInitialized )
+        {
+            model_internal::_instance.model_internal::_doValidationCacheOfAppointmentDate = null;
+            model_internal::calculateAppointmentDateIsValid();
         }
     }
     public function invalidateDependentOnEvents():void
@@ -673,6 +725,206 @@ internal class _ClientVOEntityMetadata extends com.adobe.fiber.valueobjects.Abst
         {
             model_internal::_client_statusValidationFailureMessages = value;   
             this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "client_statusValidationFailureMessages", oldValue, value));
+            // Only execute calculateIsValid if it has been called before, to update the validationFailureMessages for
+            // the entire entity.
+            if (model_internal::_instance.model_internal::_cacheInitialized_isValid)
+            {
+                model_internal::_instance.model_internal::isValid_der = model_internal::_instance.model_internal::calculateIsValid();
+            }
+        }
+    }
+
+    [Bindable(event="propertyChange")]   
+    public function get intakeDateStyle():com.adobe.fiber.styles.Style
+    {
+        return model_internal::_nullStyle;
+    }
+
+    public function get intakeDateValidator() : StyleValidator
+    {
+        return model_internal::_intakeDateValidator;
+    }
+
+    model_internal function set _intakeDateIsValid_der(value:Boolean):void 
+    {
+        var oldValue:Boolean = model_internal::_intakeDateIsValid;         
+        if (oldValue !== value)
+        {
+            model_internal::_intakeDateIsValid = value;
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "intakeDateIsValid", oldValue, value));
+        }                             
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get intakeDateIsValid():Boolean
+    {
+        if (!model_internal::_intakeDateIsValidCacheInitialized)
+        {
+            model_internal::calculateIntakeDateIsValid();
+        }
+
+        return model_internal::_intakeDateIsValid;
+    }
+
+    model_internal function calculateIntakeDateIsValid():void
+    {
+        var valRes:ValidationResultEvent = model_internal::_intakeDateValidator.validate(model_internal::_instance.intakeDate)
+        model_internal::_intakeDateIsValid_der = (valRes.results == null);
+        model_internal::_intakeDateIsValidCacheInitialized = true;
+        if (valRes.results == null)
+             model_internal::intakeDateValidationFailureMessages_der = emptyArray;
+        else
+        {
+            var _valFailures:Array = new Array();
+            for (var a:int = 0 ; a<valRes.results.length ; a++)
+            {
+                _valFailures.push(valRes.results[a].errorMessage);
+            }
+            model_internal::intakeDateValidationFailureMessages_der = _valFailures;
+        }
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get intakeDateValidationFailureMessages():Array
+    {
+        if (model_internal::_intakeDateValidationFailureMessages == null)
+            model_internal::calculateIntakeDateIsValid();
+
+        return _intakeDateValidationFailureMessages;
+    }
+
+    model_internal function set intakeDateValidationFailureMessages_der(value:Array) : void
+    {
+        var oldValue:Array = model_internal::_intakeDateValidationFailureMessages;
+
+        var needUpdate : Boolean = false;
+        if (oldValue == null)
+            needUpdate = true;
+    
+        // avoid firing the event when old and new value are different empty arrays
+        if (!needUpdate && (oldValue !== value && (oldValue.length > 0 || value.length > 0)))
+        {
+            if (oldValue.length == value.length)
+            {
+                for (var a:int=0; a < oldValue.length; a++)
+                {
+                    if (oldValue[a] !== value[a])
+                    {
+                        needUpdate = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                needUpdate = true;
+            }
+        }
+
+        if (needUpdate)
+        {
+            model_internal::_intakeDateValidationFailureMessages = value;   
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "intakeDateValidationFailureMessages", oldValue, value));
+            // Only execute calculateIsValid if it has been called before, to update the validationFailureMessages for
+            // the entire entity.
+            if (model_internal::_instance.model_internal::_cacheInitialized_isValid)
+            {
+                model_internal::_instance.model_internal::isValid_der = model_internal::_instance.model_internal::calculateIsValid();
+            }
+        }
+    }
+
+    [Bindable(event="propertyChange")]   
+    public function get appointmentDateStyle():com.adobe.fiber.styles.Style
+    {
+        return model_internal::_nullStyle;
+    }
+
+    public function get appointmentDateValidator() : StyleValidator
+    {
+        return model_internal::_appointmentDateValidator;
+    }
+
+    model_internal function set _appointmentDateIsValid_der(value:Boolean):void 
+    {
+        var oldValue:Boolean = model_internal::_appointmentDateIsValid;         
+        if (oldValue !== value)
+        {
+            model_internal::_appointmentDateIsValid = value;
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "appointmentDateIsValid", oldValue, value));
+        }                             
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get appointmentDateIsValid():Boolean
+    {
+        if (!model_internal::_appointmentDateIsValidCacheInitialized)
+        {
+            model_internal::calculateAppointmentDateIsValid();
+        }
+
+        return model_internal::_appointmentDateIsValid;
+    }
+
+    model_internal function calculateAppointmentDateIsValid():void
+    {
+        var valRes:ValidationResultEvent = model_internal::_appointmentDateValidator.validate(model_internal::_instance.appointmentDate)
+        model_internal::_appointmentDateIsValid_der = (valRes.results == null);
+        model_internal::_appointmentDateIsValidCacheInitialized = true;
+        if (valRes.results == null)
+             model_internal::appointmentDateValidationFailureMessages_der = emptyArray;
+        else
+        {
+            var _valFailures:Array = new Array();
+            for (var a:int = 0 ; a<valRes.results.length ; a++)
+            {
+                _valFailures.push(valRes.results[a].errorMessage);
+            }
+            model_internal::appointmentDateValidationFailureMessages_der = _valFailures;
+        }
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get appointmentDateValidationFailureMessages():Array
+    {
+        if (model_internal::_appointmentDateValidationFailureMessages == null)
+            model_internal::calculateAppointmentDateIsValid();
+
+        return _appointmentDateValidationFailureMessages;
+    }
+
+    model_internal function set appointmentDateValidationFailureMessages_der(value:Array) : void
+    {
+        var oldValue:Array = model_internal::_appointmentDateValidationFailureMessages;
+
+        var needUpdate : Boolean = false;
+        if (oldValue == null)
+            needUpdate = true;
+    
+        // avoid firing the event when old and new value are different empty arrays
+        if (!needUpdate && (oldValue !== value && (oldValue.length > 0 || value.length > 0)))
+        {
+            if (oldValue.length == value.length)
+            {
+                for (var a:int=0; a < oldValue.length; a++)
+                {
+                    if (oldValue[a] !== value[a])
+                    {
+                        needUpdate = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                needUpdate = true;
+            }
+        }
+
+        if (needUpdate)
+        {
+            model_internal::_appointmentDateValidationFailureMessages = value;   
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "appointmentDateValidationFailureMessages", oldValue, value));
             // Only execute calculateIsValid if it has been called before, to update the validationFailureMessages for
             // the entire entity.
             if (model_internal::_instance.model_internal::_cacheInitialized_isValid)
@@ -1126,6 +1378,14 @@ internal class _ClientVOEntityMetadata extends com.adobe.fiber.valueobjects.Abst
             case("client_status"):
             {
                 return client_statusValidationFailureMessages;
+            }
+            case("intakeDate"):
+            {
+                return intakeDateValidationFailureMessages;
+            }
+            case("appointmentDate"):
+            {
+                return appointmentDateValidationFailureMessages;
             }
             case("events"):
             {

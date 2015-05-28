@@ -11,7 +11,6 @@ import mx.rpc.AbstractOperation;
 import mx.rpc.AsyncToken;
 import mx.rpc.remoting.Operation;
 import mx.rpc.remoting.RemoteObject;
-import valueObjects.ClientSummaryVO;
 import valueObjects.ClientVO;
 
 import mx.collections.ItemResponder;
@@ -28,14 +27,13 @@ internal class _Super_ClientService extends com.adobe.fiber.services.wrapper.Rem
         _serviceControl = new mx.rpc.remoting.RemoteObject();
 
         // initialize RemoteClass alias for all entities returned by functions of this service
-        valueObjects.ClientSummaryVO._initRemoteClassAlias();
         valueObjects.ClientVO._initRemoteClassAlias();
 
         var operations:Object = new Object();
         var operation:mx.rpc.remoting.Operation;
 
         operation = new mx.rpc.remoting.Operation(null, "getClientsSummary");
-         operation.resultElementType = valueObjects.ClientSummaryVO;
+         operation.resultElementType = valueObjects.ClientVO;
         operations["getClientsSummary"] = operation;
         operation = new mx.rpc.remoting.Operation(null, "searchClients");
          operation.resultElementType = valueObjects.ClientVO;

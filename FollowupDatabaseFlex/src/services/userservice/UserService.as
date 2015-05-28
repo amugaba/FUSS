@@ -21,9 +21,9 @@ public class UserService extends _Super_UserService
 		super.preInitializeService();
 		//Replace this address with the actual location of where you will put gateway.php
 		if(global.DEBUG_MODE == 0)
-			serviceControl.endpoint = "https://www.drugs.indiana.edu/SBIRT/FollowupDatabase/gateway.php";
+			serviceControl.endpoint = global.ENDPOINT_RELEASE;
 		else if(global.DEBUG_MODE == 1)
-			serviceControl.endpoint = "https://www.drugs.indiana.edu/SBIRT/FollowupDatabaseTest/gateway.php";
+			serviceControl.endpoint = global.ENDPOINT_DEBUG;
 		serviceControl.requestTimeout = 5;
 	}
                

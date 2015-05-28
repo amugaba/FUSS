@@ -44,6 +44,11 @@ internal class _EventVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstr
     model_internal var _typeIsValidCacheInitialized:Boolean = false;
     model_internal var _typeValidationFailureMessages:Array;
     
+    model_internal var _targetdateIsValid:Boolean;
+    model_internal var _targetdateValidator:com.adobe.fiber.styles.StyleValidator;
+    model_internal var _targetdateIsValidCacheInitialized:Boolean = false;
+    model_internal var _targetdateValidationFailureMessages:Array;
+    
     model_internal var _statusIsValid:Boolean;
     model_internal var _statusValidator:com.adobe.fiber.styles.StyleValidator;
     model_internal var _statusIsValidCacheInitialized:Boolean = false;
@@ -82,7 +87,7 @@ internal class _EventVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstr
         model_internal::propertyTypeMap["event_id"] = "int";
         model_internal::propertyTypeMap["client_id"] = "int";
         model_internal::propertyTypeMap["type"] = "String";
-        model_internal::propertyTypeMap["targetdate"] = "int";
+        model_internal::propertyTypeMap["targetdate"] = "String";
         model_internal::propertyTypeMap["status"] = "String";
         model_internal::propertyTypeMap["attention"] = "Boolean";
         model_internal::propertyTypeMap["notes"] = "String";
@@ -94,6 +99,11 @@ internal class _EventVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstr
         model_internal::_typeValidator.requiredFieldError = "type is required";
         //model_internal::_typeValidator.source = model_internal::_instance;
         //model_internal::_typeValidator.property = "type";
+        model_internal::_targetdateValidator = new StyleValidator(model_internal::_instance.model_internal::_doValidationForTargetdate);
+        model_internal::_targetdateValidator.required = true;
+        model_internal::_targetdateValidator.requiredFieldError = "targetdate is required";
+        //model_internal::_targetdateValidator.source = model_internal::_instance;
+        //model_internal::_targetdateValidator.property = "targetdate";
         model_internal::_statusValidator = new StyleValidator(model_internal::_instance.model_internal::_doValidationForStatus);
         model_internal::_statusValidator.required = true;
         model_internal::_statusValidator.requiredFieldError = "status is required";
@@ -390,6 +400,14 @@ internal class _EventVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstr
             model_internal::calculateTypeIsValid();
         }
     }
+    public function invalidateDependentOnTargetdate():void
+    {
+        if (model_internal::_targetdateIsValidCacheInitialized )
+        {
+            model_internal::_instance.model_internal::_doValidationCacheOfTargetdate = null;
+            model_internal::calculateTargetdateIsValid();
+        }
+    }
     public function invalidateDependentOnStatus():void
     {
         if (model_internal::_statusIsValidCacheInitialized )
@@ -528,6 +546,100 @@ internal class _EventVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstr
     public function get targetdateStyle():com.adobe.fiber.styles.Style
     {
         return model_internal::_nullStyle;
+    }
+
+    public function get targetdateValidator() : StyleValidator
+    {
+        return model_internal::_targetdateValidator;
+    }
+
+    model_internal function set _targetdateIsValid_der(value:Boolean):void 
+    {
+        var oldValue:Boolean = model_internal::_targetdateIsValid;         
+        if (oldValue !== value)
+        {
+            model_internal::_targetdateIsValid = value;
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "targetdateIsValid", oldValue, value));
+        }                             
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get targetdateIsValid():Boolean
+    {
+        if (!model_internal::_targetdateIsValidCacheInitialized)
+        {
+            model_internal::calculateTargetdateIsValid();
+        }
+
+        return model_internal::_targetdateIsValid;
+    }
+
+    model_internal function calculateTargetdateIsValid():void
+    {
+        var valRes:ValidationResultEvent = model_internal::_targetdateValidator.validate(model_internal::_instance.targetdate)
+        model_internal::_targetdateIsValid_der = (valRes.results == null);
+        model_internal::_targetdateIsValidCacheInitialized = true;
+        if (valRes.results == null)
+             model_internal::targetdateValidationFailureMessages_der = emptyArray;
+        else
+        {
+            var _valFailures:Array = new Array();
+            for (var a:int = 0 ; a<valRes.results.length ; a++)
+            {
+                _valFailures.push(valRes.results[a].errorMessage);
+            }
+            model_internal::targetdateValidationFailureMessages_der = _valFailures;
+        }
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get targetdateValidationFailureMessages():Array
+    {
+        if (model_internal::_targetdateValidationFailureMessages == null)
+            model_internal::calculateTargetdateIsValid();
+
+        return _targetdateValidationFailureMessages;
+    }
+
+    model_internal function set targetdateValidationFailureMessages_der(value:Array) : void
+    {
+        var oldValue:Array = model_internal::_targetdateValidationFailureMessages;
+
+        var needUpdate : Boolean = false;
+        if (oldValue == null)
+            needUpdate = true;
+    
+        // avoid firing the event when old and new value are different empty arrays
+        if (!needUpdate && (oldValue !== value && (oldValue.length > 0 || value.length > 0)))
+        {
+            if (oldValue.length == value.length)
+            {
+                for (var a:int=0; a < oldValue.length; a++)
+                {
+                    if (oldValue[a] !== value[a])
+                    {
+                        needUpdate = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                needUpdate = true;
+            }
+        }
+
+        if (needUpdate)
+        {
+            model_internal::_targetdateValidationFailureMessages = value;   
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "targetdateValidationFailureMessages", oldValue, value));
+            // Only execute calculateIsValid if it has been called before, to update the validationFailureMessages for
+            // the entire entity.
+            if (model_internal::_instance.model_internal::_cacheInitialized_isValid)
+            {
+                model_internal::_instance.model_internal::isValid_der = model_internal::_instance.model_internal::calculateIsValid();
+            }
+        }
     }
 
     [Bindable(event="propertyChange")]   
@@ -770,6 +882,10 @@ internal class _EventVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstr
             case("type"):
             {
                 return typeValidationFailureMessages;
+            }
+            case("targetdate"):
+            {
+                return targetdateValidationFailureMessages;
             }
             case("status"):
             {

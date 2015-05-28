@@ -35,12 +35,12 @@
 		<link>
 			<name>services/ClientService_ClientService.php</name>
 			<type>1</type>
-			<location>C:/Users/tiddd/Documents/GitHub/FUSS/FollowupDatabase/services/ClientService.php</location>
+			<location>C:/wamp/www/FUSS/FollowupDatabase/services/ClientService.php</location>
 		</link>
 		<link>
 			<name>services/EventService.php</name>
 			<type>1</type>
-			<location>C:/Users/tiddd/Documents/GitHub/FUSS/FollowupDatabase/services/EventService.php</location>
+			<location>C:/wamp/www/FUSS/FollowupDatabase/services/EventService.php</location>
 		</link>
 		<link>
 			<name>services/MiscService.php</name>
