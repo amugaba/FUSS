@@ -263,18 +263,6 @@ class ClientService
 	 */
     public function createClient ($item)
     {       
-    	//If the client is a duplicate, make sure one of them is a referral
-	    $rs = $this->connection->query("SELECT client_status FROM clients WHERE wits_id = '$item->wits_id'");
-		while($row = mysqli_fetch_row($rs))
-		{
-			$status = $row[0];
-			if($status != "Referral" && $item->client_status != "Referral" || $status == "Referral" && $item->client_status == "Referral")
-			{
-				$this->connection->close();
-				return -1;
-			}
-		}
-    	
         $stmt = $this->connection->prepare("INSERT IGNORE INTO clients 
         (wits_id, client_status, attention, notes, flagged, bhs, facility)
         VALUES (?, ?, ?, ?, ?, ?, ?)");
