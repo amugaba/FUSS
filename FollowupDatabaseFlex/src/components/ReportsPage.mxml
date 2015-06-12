@@ -11,8 +11,12 @@
 		 creationComplete="group1_creationCompleteHandler(event)">
 	<fx:Script>
 		<![CDATA[
+			import com.adobe.fiber.runtime.lib.DateTimeFunc;
+			
+			import mx.collections.ArrayCollection;
 			import mx.collections.ArrayList;
 			import mx.controls.Alert;
+			import mx.controls.DateField;
 			import mx.core.FlexGlobals;
 			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
@@ -28,6 +32,7 @@
 			protected var batchClients:ArrayList; //list of clients in batch file to create
 			protected var client:ClientVO;//the client currently being created by the batch process
 			private var global:sbirtfollowup = FlexGlobals.topLevelApplication as sbirtfollowup;
+			private var uploadedFile:ByteArray;
 			
 			/**
 			 * Check Problems
@@ -125,11 +130,19 @@
 			
 			private function fileRef_complete(evt:Event):void 
 			{
+				getClientsForUpload.token = clientService.getClientsSummary();
+				uploadedFile = evt.currentTarget.data as ByteArray;
+			}
+			
+			protected function getClientsForUpload_resultHandler(event:ResultEvent):void
+			{
+				var allClients:ArrayCollection = getClientsForUpload.lastResult;
+				
 				batchNumClients = 0;
 				batchClients = new ArrayList();
 				batchUpload = true;
 				
-				var ba:ByteArray = evt.currentTarget.data as ByteArray;
+				var ba:ByteArray = uploadedFile;
 				var text:String = ba.readUTFBytes(ba.bytesAvailable);
 				var lines:Array = text.split("\n");
 				
@@ -149,12 +162,30 @@
 						var id:String = words[idInd];
 						var facility:String = words[facilityInd];
 						var bhs:String = words[bhsInd];
+						bhs = "Linda Swick";//since Linda does it all
 						var bhsNum:int = global.searchBhsList.getItemIndex(bhs);
 						if(bhsNum == -1)
 							bhs = "ZZ";
 						else
 							bhs = global.searchBhsInitials[bhsNum];
 						var date:String = words[dateind];
+						
+						//check if this client was already uploaded
+						var duplicate:Boolean = false;
+						for each(var clientTemp:ClientVO in allClients)
+						{
+							//If WITS ID is the same, then intake date must be several months apart
+							if(clientTemp.wits_id == id)
+							{
+								var oldDate:Date = global.stringToDate(clientTemp.intakeDate);
+								var newDate:Date = DateField.stringToDate(date,"MM/DD/YYYY");
+								var diff:int = getDaysBetweenDates(oldDate, newDate);
+								if(diff < 180)
+									duplicate = true;
+							}
+						}
+						if(duplicate)
+							continue;
 						
 						//For each client, add it to a list to be created
 						var tempClient:ClientVO = new ClientVO();
@@ -174,6 +205,15 @@
 					client = batchClients.removeItemAt(0) as ClientVO;
 					createClientResult.token = clientService.createClient(client);
 				}
+			}
+			
+			protected static function getDaysBetweenDates(date1:Date,date2:Date):int
+			{
+				var one_day:Number = 1000 * 60 * 60 * 24
+				var date1_ms:Number = date1.getTime();
+				var date2_ms:Number = date2.getTime();		    
+				var difference_ms:Number = Math.abs(date1_ms - date2_ms)		    
+				return Math.round(difference_ms/one_day);
 			}
 			
 			protected function createClientResult_resultHandler(event:ResultEvent):void
@@ -270,6 +310,7 @@
 								 fault="Alert.show(event.fault.faultString + '\n' + event.fault.faultDetail)"
 								 showBusyCursor="true"/>
 		<s:CallResponder id="checkProblemsResult" result="checkProblemsResult_resultHandler(event)"/>
+		<s:CallResponder id="getClientsForUpload" result="getClientsForUpload_resultHandler(event)"/>
 	</fx:Declarations>
 	<s:Panel x="330" y="231" width="319" height="233" title="Reports">
 		<s:layout>

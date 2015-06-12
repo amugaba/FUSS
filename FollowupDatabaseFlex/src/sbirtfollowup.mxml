@@ -71,7 +71,7 @@ and then change the found line.
 			protected var updateAccount:Boolean;
 			public var dateFormatter:DateTimeFormatter = new DateTimeFormatter(LocaleID.DEFAULT);
 			
-			public var DEBUG_MODE:int = 2;//0 = release, 1 = remote debug, 2 = local debug
+			public var DEBUG_MODE:int = 0;//0 = release, 1 = remote debug, 2 = local debug
 			public var ENDPOINT_RELEASE:String = "https://www.iprctech.org/followup/IndianaSBIRT/gateway.php";
 			public var ENDPOINT_DEBUG:String = "https://www.iprctech.org/followup/IndianaSBIRTTest/gateway.php";
 			
@@ -535,7 +535,7 @@ and then change the found line.
 				}
 			}
 			
-			protected function stringToDate(str:String):Date
+			public function stringToDate(str:String):Date
 			{
 				var date:Date = DateField.stringToDate(str,"YYYY-MM-DD");
 				return date;
