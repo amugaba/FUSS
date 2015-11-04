@@ -35,15 +35,21 @@ internal class _Super_UserService extends com.adobe.fiber.services.wrapper.Remot
         operation = new mx.rpc.remoting.Operation(null, "loginUser");
          operation.resultType = valueObjects.UserVO;
         operations["loginUser"] = operation;
-        operation = new mx.rpc.remoting.Operation(null, "updateUser");
+        operation = new mx.rpc.remoting.Operation(null, "getUser");
+         operation.resultType = valueObjects.UserVO;
+        operations["getUser"] = operation;
+        operation = new mx.rpc.remoting.Operation(null, "updatePassword");
          operation.resultType = Boolean;
-        operations["updateUser"] = operation;
+        operations["updatePassword"] = operation;
         operation = new mx.rpc.remoting.Operation(null, "getUsers");
          operation.resultElementType = valueObjects.UserVO;
         operations["getUsers"] = operation;
-        operation = new mx.rpc.remoting.Operation(null, "emailPassword");
+        operation = new mx.rpc.remoting.Operation(null, "resetPassword");
          operation.resultType = Boolean;
-        operations["emailPassword"] = operation;
+        operations["resetPassword"] = operation;
+        operation = new mx.rpc.remoting.Operation(null, "signEULA");
+         operation.resultType = Boolean;
+        operations["signEULA"] = operation;
 
         _serviceControl.operations = operations;
         _serviceControl.convertResultHandler = com.adobe.serializers.utility.TypeUtility.convertResultHandler;
@@ -82,7 +88,7 @@ internal class _Super_UserService extends com.adobe.fiber.services.wrapper.Remot
     }
      
     /**
-      * This method is a generated wrapper used to call the 'updateUser' operation. It returns an mx.rpc.AsyncToken whose 
+      * This method is a generated wrapper used to call the 'getUser' operation. It returns an mx.rpc.AsyncToken whose 
       * result property will be populated with the result of the operation when the server response is received. 
       * To use this result from MXML code, define a CallResponder component and assign its token property to this method's return value. 
       * You can then bind to CallResponder.lastResult or listen for the CallResponder.result or fault events.
@@ -92,9 +98,27 @@ internal class _Super_UserService extends com.adobe.fiber.services.wrapper.Remot
       *
       * @return an mx.rpc.AsyncToken whose result property will be populated with the result of the operation when the server response is received.
       */
-    public function updateUser(user:valueObjects.UserVO) : mx.rpc.AsyncToken
+    public function getUser(username:String) : mx.rpc.AsyncToken
     {
-        var _internal_operation:mx.rpc.AbstractOperation = _serviceControl.getOperation("updateUser");
+        var _internal_operation:mx.rpc.AbstractOperation = _serviceControl.getOperation("getUser");
+		var _internal_token:mx.rpc.AsyncToken = _internal_operation.send(username) ;
+        return _internal_token;
+    }
+     
+    /**
+      * This method is a generated wrapper used to call the 'updatePassword' operation. It returns an mx.rpc.AsyncToken whose 
+      * result property will be populated with the result of the operation when the server response is received. 
+      * To use this result from MXML code, define a CallResponder component and assign its token property to this method's return value. 
+      * You can then bind to CallResponder.lastResult or listen for the CallResponder.result or fault events.
+      *
+      * @see mx.rpc.AsyncToken
+      * @see mx.rpc.CallResponder 
+      *
+      * @return an mx.rpc.AsyncToken whose result property will be populated with the result of the operation when the server response is received.
+      */
+    public function updatePassword(user:valueObjects.UserVO) : mx.rpc.AsyncToken
+    {
+        var _internal_operation:mx.rpc.AbstractOperation = _serviceControl.getOperation("updatePassword");
 		var _internal_token:mx.rpc.AsyncToken = _internal_operation.send(user) ;
         return _internal_token;
     }
@@ -118,7 +142,7 @@ internal class _Super_UserService extends com.adobe.fiber.services.wrapper.Remot
     }
      
     /**
-      * This method is a generated wrapper used to call the 'emailPassword' operation. It returns an mx.rpc.AsyncToken whose 
+      * This method is a generated wrapper used to call the 'resetPassword' operation. It returns an mx.rpc.AsyncToken whose 
       * result property will be populated with the result of the operation when the server response is received. 
       * To use this result from MXML code, define a CallResponder component and assign its token property to this method's return value. 
       * You can then bind to CallResponder.lastResult or listen for the CallResponder.result or fault events.
@@ -128,10 +152,28 @@ internal class _Super_UserService extends com.adobe.fiber.services.wrapper.Remot
       *
       * @return an mx.rpc.AsyncToken whose result property will be populated with the result of the operation when the server response is received.
       */
-    public function emailPassword(username:String) : mx.rpc.AsyncToken
+    public function resetPassword(user:valueObjects.UserVO) : mx.rpc.AsyncToken
     {
-        var _internal_operation:mx.rpc.AbstractOperation = _serviceControl.getOperation("emailPassword");
-		var _internal_token:mx.rpc.AsyncToken = _internal_operation.send(username) ;
+        var _internal_operation:mx.rpc.AbstractOperation = _serviceControl.getOperation("resetPassword");
+		var _internal_token:mx.rpc.AsyncToken = _internal_operation.send(user) ;
+        return _internal_token;
+    }
+     
+    /**
+      * This method is a generated wrapper used to call the 'signEULA' operation. It returns an mx.rpc.AsyncToken whose 
+      * result property will be populated with the result of the operation when the server response is received. 
+      * To use this result from MXML code, define a CallResponder component and assign its token property to this method's return value. 
+      * You can then bind to CallResponder.lastResult or listen for the CallResponder.result or fault events.
+      *
+      * @see mx.rpc.AsyncToken
+      * @see mx.rpc.CallResponder 
+      *
+      * @return an mx.rpc.AsyncToken whose result property will be populated with the result of the operation when the server response is received.
+      */
+    public function signEULA(userid:int) : mx.rpc.AsyncToken
+    {
+        var _internal_operation:mx.rpc.AbstractOperation = _serviceControl.getOperation("signEULA");
+		var _internal_token:mx.rpc.AsyncToken = _internal_operation.send(userid) ;
         return _internal_token;
     }
      

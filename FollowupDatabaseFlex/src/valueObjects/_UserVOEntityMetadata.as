@@ -22,14 +22,14 @@ internal class _UserVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstra
 {
     private static var emptyArray:Array = new Array();
 
-    model_internal static var allProperties:Array = new Array("username", "name", "password", "initials", "facility", "email");
+    model_internal static var allProperties:Array = new Array("autoid", "username", "name", "password", "initials", "facility", "email", "eulaSigned", "passwordChangedDate");
     model_internal static var allAssociationProperties:Array = new Array();
-    model_internal static var allRequiredProperties:Array = new Array("username", "name", "password", "initials", "facility", "email");
-    model_internal static var allAlwaysAvailableProperties:Array = new Array("username", "name", "password", "initials", "facility", "email");
+    model_internal static var allRequiredProperties:Array = new Array("autoid", "username", "name", "password", "initials", "facility", "email", "eulaSigned", "passwordChangedDate");
+    model_internal static var allAlwaysAvailableProperties:Array = new Array("autoid", "username", "name", "password", "initials", "facility", "email", "eulaSigned", "passwordChangedDate");
     model_internal static var guardedProperties:Array = new Array();
-    model_internal static var dataProperties:Array = new Array("username", "name", "password", "initials", "facility", "email");
+    model_internal static var dataProperties:Array = new Array("autoid", "username", "name", "password", "initials", "facility", "email", "eulaSigned", "passwordChangedDate");
     model_internal static var sourceProperties:Array = emptyArray
-    model_internal static var nonDerivedProperties:Array = new Array("username", "name", "password", "initials", "facility", "email");
+    model_internal static var nonDerivedProperties:Array = new Array("autoid", "username", "name", "password", "initials", "facility", "email", "eulaSigned", "passwordChangedDate");
     model_internal static var derivedProperties:Array = new Array();
     model_internal static var collectionProperties:Array = new Array();
     model_internal static var collectionBaseMap:Object;
@@ -68,6 +68,11 @@ internal class _UserVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstra
     model_internal var _emailValidator:com.adobe.fiber.styles.StyleValidator;
     model_internal var _emailIsValidCacheInitialized:Boolean = false;
     model_internal var _emailValidationFailureMessages:Array;
+    
+    model_internal var _passwordChangedDateIsValid:Boolean;
+    model_internal var _passwordChangedDateValidator:com.adobe.fiber.styles.StyleValidator;
+    model_internal var _passwordChangedDateIsValidCacheInitialized:Boolean = false;
+    model_internal var _passwordChangedDateValidationFailureMessages:Array;
 
     model_internal var _instance:_Super_UserVO;
     model_internal static var _nullStyle:com.adobe.fiber.styles.Style = new com.adobe.fiber.styles.Style();
@@ -79,12 +84,15 @@ internal class _UserVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstra
         {
             // dependents map
             model_internal::dependentsOnMap = new Object();
+            model_internal::dependentsOnMap["autoid"] = new Array();
             model_internal::dependentsOnMap["username"] = new Array();
             model_internal::dependentsOnMap["name"] = new Array();
             model_internal::dependentsOnMap["password"] = new Array();
             model_internal::dependentsOnMap["initials"] = new Array();
             model_internal::dependentsOnMap["facility"] = new Array();
             model_internal::dependentsOnMap["email"] = new Array();
+            model_internal::dependentsOnMap["eulaSigned"] = new Array();
+            model_internal::dependentsOnMap["passwordChangedDate"] = new Array();
 
             // collection base map
             model_internal::collectionBaseMap = new Object();
@@ -92,12 +100,15 @@ internal class _UserVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstra
 
         // Property type Map
         model_internal::propertyTypeMap = new Object();
+        model_internal::propertyTypeMap["autoid"] = "int";
         model_internal::propertyTypeMap["username"] = "String";
         model_internal::propertyTypeMap["name"] = "String";
         model_internal::propertyTypeMap["password"] = "String";
         model_internal::propertyTypeMap["initials"] = "String";
         model_internal::propertyTypeMap["facility"] = "String";
         model_internal::propertyTypeMap["email"] = "String";
+        model_internal::propertyTypeMap["eulaSigned"] = "int";
+        model_internal::propertyTypeMap["passwordChangedDate"] = "String";
 
         model_internal::_instance = value;
         model_internal::_usernameValidator = new StyleValidator(model_internal::_instance.model_internal::_doValidationForUsername);
@@ -130,6 +141,11 @@ internal class _UserVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstra
         model_internal::_emailValidator.requiredFieldError = "email is required";
         //model_internal::_emailValidator.source = model_internal::_instance;
         //model_internal::_emailValidator.property = "email";
+        model_internal::_passwordChangedDateValidator = new StyleValidator(model_internal::_instance.model_internal::_doValidationForPasswordChangedDate);
+        model_internal::_passwordChangedDateValidator.required = true;
+        model_internal::_passwordChangedDateValidator.requiredFieldError = "passwordChangedDate is required";
+        //model_internal::_passwordChangedDateValidator.source = model_internal::_instance;
+        //model_internal::_passwordChangedDateValidator.property = "passwordChangedDate";
     }
 
     override public function getEntityName():String
@@ -357,6 +373,12 @@ internal class _UserVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstra
     }
 
     [Bindable(event="propertyChange")]
+    public function get isAutoidAvailable():Boolean
+    {
+        return true;
+    }
+
+    [Bindable(event="propertyChange")]
     public function get isUsernameAvailable():Boolean
     {
         return true;
@@ -388,6 +410,18 @@ internal class _UserVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstra
 
     [Bindable(event="propertyChange")]
     public function get isEmailAvailable():Boolean
+    {
+        return true;
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get isEulaSignedAvailable():Boolean
+    {
+        return true;
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get isPasswordChangedDateAvailable():Boolean
     {
         return true;
     }
@@ -444,10 +478,24 @@ internal class _UserVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstra
             model_internal::calculateEmailIsValid();
         }
     }
+    public function invalidateDependentOnPasswordChangedDate():void
+    {
+        if (model_internal::_passwordChangedDateIsValidCacheInitialized )
+        {
+            model_internal::_instance.model_internal::_doValidationCacheOfPasswordChangedDate = null;
+            model_internal::calculatePasswordChangedDateIsValid();
+        }
+    }
 
     model_internal function fireChangeEvent(propertyName:String, oldValue:Object, newValue:Object):void
     {
         this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, propertyName, oldValue, newValue));
+    }
+
+    [Bindable(event="propertyChange")]   
+    public function get autoidStyle():com.adobe.fiber.styles.Style
+    {
+        return model_internal::_nullStyle;
     }
 
     [Bindable(event="propertyChange")]   
@@ -1050,6 +1098,112 @@ internal class _UserVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstra
         }
     }
 
+    [Bindable(event="propertyChange")]   
+    public function get eulaSignedStyle():com.adobe.fiber.styles.Style
+    {
+        return model_internal::_nullStyle;
+    }
+
+    [Bindable(event="propertyChange")]   
+    public function get passwordChangedDateStyle():com.adobe.fiber.styles.Style
+    {
+        return model_internal::_nullStyle;
+    }
+
+    public function get passwordChangedDateValidator() : StyleValidator
+    {
+        return model_internal::_passwordChangedDateValidator;
+    }
+
+    model_internal function set _passwordChangedDateIsValid_der(value:Boolean):void 
+    {
+        var oldValue:Boolean = model_internal::_passwordChangedDateIsValid;         
+        if (oldValue !== value)
+        {
+            model_internal::_passwordChangedDateIsValid = value;
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "passwordChangedDateIsValid", oldValue, value));
+        }                             
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get passwordChangedDateIsValid():Boolean
+    {
+        if (!model_internal::_passwordChangedDateIsValidCacheInitialized)
+        {
+            model_internal::calculatePasswordChangedDateIsValid();
+        }
+
+        return model_internal::_passwordChangedDateIsValid;
+    }
+
+    model_internal function calculatePasswordChangedDateIsValid():void
+    {
+        var valRes:ValidationResultEvent = model_internal::_passwordChangedDateValidator.validate(model_internal::_instance.passwordChangedDate)
+        model_internal::_passwordChangedDateIsValid_der = (valRes.results == null);
+        model_internal::_passwordChangedDateIsValidCacheInitialized = true;
+        if (valRes.results == null)
+             model_internal::passwordChangedDateValidationFailureMessages_der = emptyArray;
+        else
+        {
+            var _valFailures:Array = new Array();
+            for (var a:int = 0 ; a<valRes.results.length ; a++)
+            {
+                _valFailures.push(valRes.results[a].errorMessage);
+            }
+            model_internal::passwordChangedDateValidationFailureMessages_der = _valFailures;
+        }
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get passwordChangedDateValidationFailureMessages():Array
+    {
+        if (model_internal::_passwordChangedDateValidationFailureMessages == null)
+            model_internal::calculatePasswordChangedDateIsValid();
+
+        return _passwordChangedDateValidationFailureMessages;
+    }
+
+    model_internal function set passwordChangedDateValidationFailureMessages_der(value:Array) : void
+    {
+        var oldValue:Array = model_internal::_passwordChangedDateValidationFailureMessages;
+
+        var needUpdate : Boolean = false;
+        if (oldValue == null)
+            needUpdate = true;
+    
+        // avoid firing the event when old and new value are different empty arrays
+        if (!needUpdate && (oldValue !== value && (oldValue.length > 0 || value.length > 0)))
+        {
+            if (oldValue.length == value.length)
+            {
+                for (var a:int=0; a < oldValue.length; a++)
+                {
+                    if (oldValue[a] !== value[a])
+                    {
+                        needUpdate = true;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                needUpdate = true;
+            }
+        }
+
+        if (needUpdate)
+        {
+            model_internal::_passwordChangedDateValidationFailureMessages = value;   
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "passwordChangedDateValidationFailureMessages", oldValue, value));
+            // Only execute calculateIsValid if it has been called before, to update the validationFailureMessages for
+            // the entire entity.
+            if (model_internal::_instance.model_internal::_cacheInitialized_isValid)
+            {
+                model_internal::_instance.model_internal::isValid_der = model_internal::_instance.model_internal::calculateIsValid();
+            }
+        }
+    }
+
 
      /**
      * 
@@ -1098,6 +1252,10 @@ internal class _UserVOEntityMetadata extends com.adobe.fiber.valueobjects.Abstra
             case("email"):
             {
                 return emailValidationFailureMessages;
+            }
+            case("passwordChangedDate"):
+            {
+                return passwordChangedDateValidationFailureMessages;
             }
             default:
             {

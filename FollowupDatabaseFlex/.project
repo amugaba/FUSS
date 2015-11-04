@@ -33,6 +33,11 @@
 			<location>C:/wamp/www/FollowupDatabaseRelease</location>
 		</link>
 		<link>
+			<name>bin-release1</name>
+			<type>2</type>
+			<location>C:/wamp/www/FollowupDatabaseFlex</location>
+		</link>
+		<link>
 			<name>services/ClientService_ClientService.php</name>
 			<type>1</type>
 			<location>C:/wamp/www/FUSS/FollowupDatabase/services/ClientService.php</location>
@@ -45,12 +50,12 @@
 		<link>
 			<name>services/MiscService.php</name>
 			<type>1</type>
-			<location>C:/Users/tiddd/Documents/GitHub/FUSS/FollowupDatabase/services/MiscService.php</location>
+			<location>C:/wamp/www/FUSS/FollowupDatabase/services/MiscService.php</location>
 		</link>
 		<link>
 			<name>services/UserService.php</name>
 			<type>1</type>
-			<location>C:/Users/tiddd/Documents/GitHub/FUSS/FollowupDatabase/services/UserService.php</location>
+			<location>C:/wamp/www/FUSS/FollowupDatabase/services/UserService.php</location>
 		</link>
 	</linkedResources>
 </projectDescription>

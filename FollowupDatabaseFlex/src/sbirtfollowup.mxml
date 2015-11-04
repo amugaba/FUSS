@@ -85,6 +85,9 @@ and then change the found line.
 			//Upon leaving the login page
 			protected function state1_enterStateHandler(event:FlexEvent):void
 			{
+				getUsers.token = userService.getUsers();
+				getDefaultEvents.token = miscService.getDefaultEvents();
+				
 				clientForm.enabled = false;
 				eventGrid.enabled = false;
 				eventForm.enabled = false;
@@ -555,79 +558,6 @@ and then change the found line.
 				searchClients();
 			}
 			
-			
-			protected function loginButton_clickHandler(event:MouseEvent):void
-			{
-				updateAccount = false;
-				loginUserResult.token = userService.loginUser(usernameInput.text, passwordInput.text);
-			}
-
-			protected function updateAccountButton_clickHandler(event:MouseEvent):void
-			{
-				updateAccount = true;
-				loginUserResult.token = userService.loginUser(usernameInput.text, passwordInput.text);
-			}
-			
-			protected function loginUserResult_resultHandler(event:ResultEvent):void
-			{
-				//Alert.show(ObjectUtil.toString(loginUserResult.lastResult));
-				if(loginUserResult.lastResult == null)
-				{
-					Alert.show("Username and password are incorrect.", "Login Failed");
-				}
-				else
-				{
-					userVO = loginUserResult.lastResult as UserVO;
-					if(updateAccount)
-						updateAccountPanel.visible = true;
-					else
-					{
-						getUsers.token = userService.getUsers();
-						getDefaultEvents.token = miscService.getDefaultEvents();
-						currentState = "State1";
-					}
-				}
-			}			
-			
-			
-			protected function changePasswordButton_clickHandler(event:MouseEvent):void
-			{
-				if(newPasswordInput.text == confirmPassowrdInput.text && newPasswordInput.text.length > 4)
-				{
-					userVO.password = newPasswordInput.text;
-					updateUserResult.token = userService.updateUser(userVO);
-				}
-				else
-					Alert.show("The passwords must match and be 5 or more characters.", "Password NOT changed");
-			}
-			
-			protected function changeFacilityButton_clickHandler(event:MouseEvent):void
-			{
-				userVO.facility = accountFacility.selectedItem;
-				updateUserResult.token = userService.updateUser(userVO);
-			}
-			
-			protected function updateUserResult_resultHandler(event:ResultEvent):void
-			{
-				if(updateUserResult.lastResult == null)
-					Alert.show("Account NOT updated.", "ERROR");
-				else
-					Alert.show("Account updated.", "SUCCESS");
-			}
-			
-			protected function forgotPasswordButton_clickHandler(event:MouseEvent):void
-			{
-				emailPasswordResult.token = userService.emailPassword(usernameInput.text);
-			}
-			
-			protected function emailPasswordResult_resultHandler(event:ResultEvent):void
-			{
-				if(emailPasswordResult.lastResult)
-					Alert.show("Password has been sent to your email address.", "SUCCESS");
-				else
-					Alert.show("Username not found.", "ERROR");
-			}
-			
 			protected function getUsers_resultHandler(event:ResultEvent):void
 			{
 				//initialize BHS name and intials arrays
@@ -735,11 +665,6 @@ and then change the found line.
 		<s:CallResponder id="updateEventResult" result="updateEventResult_resultHandler(event)"/>
 		<s:CallResponder id="createEventResult" result="createEventResult_resultHandler(event)"/>
 		<s:CallResponder id="searchClientsResult" result="clientList = searchClientsResult.lastResult"/>
-		<s:CallResponder id="loginUserResult"
-						 result="loginUserResult_resultHandler(event)"/>
-		<s:CallResponder id="emailPasswordResult"
-						 result="emailPasswordResult_resultHandler(event)"/>
-		<s:CallResponder id="updateUserResult" result="updateUserResult_resultHandler(event)"/>
 		<s:CallResponder id="getUsers" result="getUsers_resultHandler(event)"/>
 		<userservice:UserService id="userService"
 								 fault="Alert.show(event.fault.faultString + '\n' + event.fault.faultDetail)"
@@ -753,51 +678,9 @@ and then change the found line.
 		<s:CallResponder id="getFacilities" result="getFacilities_resultHandler(event)"/>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
-	
 
-	
 	<!-- LOGIN SCREEN -->
-	<s:Group includeIn="Login" x="0" y="0" width="1024" height="768" chromeColor="#FFA729">
-		<s:Image x="0" y="0" source="assets/background-design-orange1024.jpg"/>
-		<s:Panel id="loginPanel" y="326" width="277" height="236" horizontalCenter="0" title="Log In">
-			<s:Form id="logingForm" x="10" y="6" width="258" height="187"
-					defaultButton="{loginButton}">
-				<s:FormItem label="Username:">
-					<s:TextInput id="usernameInput"/>
-				</s:FormItem>
-				<s:FormItem label="Password:">
-					<s:TextInput id="passwordInput" displayAsPassword="true"/>
-				</s:FormItem>
-				<s:Group width="248" height="76">
-					<s:Button id="loginButton" x="3" y="8" label="Login"
-							  click="loginButton_clickHandler(event)"/>
-					<s:Button id="updateAccountButton" x="138" y="8" label="Update Account"
-							  click="updateAccountButton_clickHandler(event)"/>
-					<s:Button id="forgotPasswordButton" x="129" y="54" label="Forgot Password"
-							  click="forgotPasswordButton_clickHandler(event)"/>
-				</s:Group>
-			</s:Form>
-		</s:Panel>
-		<s:Image y="10" horizontalCenter="0" source="assets/SBIRT logo trans.png"/><!--LOGOCHANGE-->
-		<s:Panel id="updateAccountPanel" x="719" y="204" width="295" height="322" visible="false"
-				 title="Update Account">
-			<s:Form x="10" y="10">
-				<s:FormItem label="New password:">
-					<s:TextInput id="newPasswordInput" displayAsPassword="true"/>
-				</s:FormItem>
-				<s:FormItem label="Confirm password:">
-					<s:TextInput id="confirmPassowrdInput" displayAsPassword="true"/>
-				</s:FormItem>
-				<s:Button id="changePasswordButton" label="Change Password" click="changePasswordButton_clickHandler(event)"/>
-			</s:Form>
-			<s:Form x="10" y="157">
-				<s:FormItem label="Default facility:">
-					<s:DropDownList id="accountFacility" dataProvider="{facilityList}" selectedItem="{userVO.facility}"/>
-				</s:FormItem>
-				<s:Button label="Change Facility" id="changeFacilityButton" click="changeFacilityButton_clickHandler(event)"/>
-			</s:Form>
-		</s:Panel>
-	</s:Group>
+	<components:LoginPage id="pageLogin" width="100%" height="100%" label="Login" includeIn="Login"/>
 	
 	<s:Image includeIn="State1, Reports" x="0" y="0" source="assets/background-design-orange1024.jpg"/>
 	<s:BorderContainer id="containerClientGrid" includeIn="State1" x="6" y="10" width="315"

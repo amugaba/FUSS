@@ -62,12 +62,15 @@ public class _Super_UserVO extends flash.events.EventDispatcher implements com.a
     /**
      * properties
      */
+    private var _internal_autoid : int;
     private var _internal_username : String;
     private var _internal_name : String;
     private var _internal_password : String;
     private var _internal_initials : String;
     private var _internal_facility : String;
     private var _internal_email : String;
+    private var _internal_eulaSigned : int;
+    private var _internal_passwordChangedDate : String;
 
     private static var emptyArray:Array = new Array();
 
@@ -90,12 +93,19 @@ public class _Super_UserVO extends flash.events.EventDispatcher implements com.a
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "initials", model_internal::setterListenerInitials));
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "facility", model_internal::setterListenerFacility));
         model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "email", model_internal::setterListenerEmail));
+        model_internal::_changeWatcherArray.push(mx.binding.utils.ChangeWatcher.watch(this, "passwordChangedDate", model_internal::setterListenerPasswordChangedDate));
 
     }
 
     /**
      * data/source property getters
      */
+
+    [Bindable(event="propertyChange")]
+    public function get autoid() : int
+    {
+        return _internal_autoid;
+    }
 
     [Bindable(event="propertyChange")]
     public function get username() : String
@@ -133,6 +143,18 @@ public class _Super_UserVO extends flash.events.EventDispatcher implements com.a
         return _internal_email;
     }
 
+    [Bindable(event="propertyChange")]
+    public function get eulaSigned() : int
+    {
+        return _internal_eulaSigned;
+    }
+
+    [Bindable(event="propertyChange")]
+    public function get passwordChangedDate() : String
+    {
+        return _internal_passwordChangedDate;
+    }
+
     public function clearAssociations() : void
     {
     }
@@ -140,6 +162,16 @@ public class _Super_UserVO extends flash.events.EventDispatcher implements com.a
     /**
      * data/source property setters
      */
+
+    public function set autoid(value:int) : void
+    {
+        var oldValue:int = _internal_autoid;
+        if (oldValue !== value)
+        {
+            _internal_autoid = value;
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "autoid", oldValue, _internal_autoid));
+        }
+    }
 
     public function set username(value:String) : void
     {
@@ -201,6 +233,26 @@ public class _Super_UserVO extends flash.events.EventDispatcher implements com.a
         }
     }
 
+    public function set eulaSigned(value:int) : void
+    {
+        var oldValue:int = _internal_eulaSigned;
+        if (oldValue !== value)
+        {
+            _internal_eulaSigned = value;
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "eulaSigned", oldValue, _internal_eulaSigned));
+        }
+    }
+
+    public function set passwordChangedDate(value:String) : void
+    {
+        var oldValue:String = _internal_passwordChangedDate;
+        if (oldValue !== value)
+        {
+            _internal_passwordChangedDate = value;
+            this.dispatchEvent(mx.events.PropertyChangeEvent.createUpdateEvent(this, "passwordChangedDate", oldValue, _internal_passwordChangedDate));
+        }
+    }
+
     /**
      * Data/source property setter listeners
      *
@@ -241,6 +293,11 @@ public class _Super_UserVO extends flash.events.EventDispatcher implements com.a
     model_internal function setterListenerEmail(value:flash.events.Event):void
     {
         _model.invalidateDependentOnEmail();
+    }
+
+    model_internal function setterListenerPasswordChangedDate(value:flash.events.Event):void
+    {
+        _model.invalidateDependentOnPasswordChangedDate();
     }
 
 
@@ -293,6 +350,11 @@ public class _Super_UserVO extends flash.events.EventDispatcher implements com.a
         {
             propertyValidity = false;
             com.adobe.fiber.util.FiberUtils.arrayAdd(validationFailureMessages, _model.model_internal::_emailValidationFailureMessages);
+        }
+        if (!_model.passwordChangedDateIsValid)
+        {
+            propertyValidity = false;
+            com.adobe.fiber.util.FiberUtils.arrayAdd(validationFailureMessages, _model.model_internal::_passwordChangedDateValidationFailureMessages);
         }
 
         model_internal::_cacheInitialized_isValid = true;
@@ -531,6 +593,33 @@ public class _Super_UserVO extends flash.events.EventDispatcher implements com.a
 
         model_internal::_doValidationCacheOfEmail = validationFailures;
         model_internal::_doValidationLastValOfEmail = value;
+
+        return validationFailures;
+    }
+    
+    model_internal var _doValidationCacheOfPasswordChangedDate : Array = null;
+    model_internal var _doValidationLastValOfPasswordChangedDate : String;
+
+    model_internal function _doValidationForPasswordChangedDate(valueIn:Object):Array
+    {
+        var value : String = valueIn as String;
+
+        if (model_internal::_doValidationCacheOfPasswordChangedDate != null && model_internal::_doValidationLastValOfPasswordChangedDate == value)
+           return model_internal::_doValidationCacheOfPasswordChangedDate ;
+
+        _model.model_internal::_passwordChangedDateIsValidCacheInitialized = true;
+        var validationFailures:Array = new Array();
+        var errorMessage:String;
+        var failure:Boolean;
+
+        var valRes:ValidationResult;
+        if (_model.isPasswordChangedDateAvailable && _internal_passwordChangedDate == null)
+        {
+            validationFailures.push(new ValidationResult(true, "", "", "passwordChangedDate is required"));
+        }
+
+        model_internal::_doValidationCacheOfPasswordChangedDate = validationFailures;
+        model_internal::_doValidationLastValOfPasswordChangedDate = value;
 
         return validationFailures;
     }
