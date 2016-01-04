@@ -322,7 +322,7 @@ and then change the found line.
 					errorMessage += "Enter date in format MM-DD-YY.\n\n";
 				else
 				{
-					var dayDifference:int = (date.getTime() - new Date().getTime()) / (1000*60*60*24);
+					var dayDifference:int = (date.time - new Date().time) / (1000*60*60*24);
 					
 					if(dayDifference < -30)
 						warningMessage += "Date is more the 30 days in the past. Use this date?\n\n";
@@ -459,7 +459,7 @@ and then change the found line.
 					errorMessage += "Enter date in format MM-DD-YY.\n\n";
 				else
 				{				
-					var dayDifference:int = (date.getTime() - new Date().getTime()) / (1000*60*60*24);
+					var dayDifference:int = (date.time - new Date().time) / (1000*60*60*24);
 					
 					if(dayDifference < -30)
 						warningMessage += "Date is more the 30 days in the past. Use this date?\n\n";
@@ -613,7 +613,7 @@ and then change the found line.
 							intakeDate = stringToDate(ev.targetdate);
 						
 					var eightMonthDate:Date = new Date(intakeDate.getTime() + 8*30*1000*60*60*24);
-					var dayDifference:int = (eightMonthDate.getTime() - new Date().getTime()) / (1000*60*60*24);
+					var dayDifference:int = (eightMonthDate.time - new Date().time) / (1000*60*60*24);
 					
 					for(var i:int = 0; i < dayDifference; i += 25)
 						submitDefaultEvent(new Date(), "Call",i,"SYSTEM: Monthly contact event. Call collateral. Call patient and/or send letter. " +
@@ -821,7 +821,7 @@ and then change the found line.
 					<s:BasicLayout/>
 				</s:layout>
 				<s:Label x="-72" y="0" fontSize="13" fontWeight="bold" text="Notes"/>
-				<s:TextArea id="notesTextInput2" x="-77" y="22" width="265" height="129"
+				<mx:TextArea id="notesTextInput2" x="-77" y="22" width="265" height="129"
 							text="{eventVO.notes}"/>
 			</s:FormItem>
 			<s:FormItem>
