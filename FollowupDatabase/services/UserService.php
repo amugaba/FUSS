@@ -1,8 +1,7 @@
 <?php
 include_once 'UserVO.php';
 include_once 'ConnectionManager.php';
-	require_once('Zend/Mail/Transport/Smtp.php');
-	require_once 'Zend/Mail.php';
+require_once 'MailHelper.php';
 
 /**
  * Service to access User data.
@@ -185,23 +184,9 @@ class UserService
         mysqli_close($this->connection);
         
         //email password to user
-       	$config = array('auth' => 'login',
-                'username' => 'contact@angstrom-software.com',
-                'password' => 'squirrelmob',
-    	          'port'     => 587,
-                'ssl' => 'tls');
-
-        $transport = new Zend_Mail_Transport_Smtp('mail.angstrom-software.com', $config);
-
-    	$mail = new Zend_Mail();
-		$mail->setBodyText('Your temporary password is '.$randomString.'   When you log in using this password, you will be asked to create a new password.');
-		$mail->setBodyHtml('<p>Your temporary password is <b>'.$randomString.'</b></p><p>When you log in using this password, you will be asked to create a new password.</p>');
-		$mail->setFrom('contact@angstrom-software.com', 'CDPConnect System');
-		$mail->addTo($user->email, 'User');
-		$mail->setSubject('Follow-up System: Password Recovery');
-		$mail->send($transport);
-		
-		return true;
+        $mailer = new MailHelper('Follow-up System: Password Recovery');
+        $mailer->setBody('<p>Your temporary password is <b>'.$randomString.'</b></p><p>When you log in using this password, you will be asked to create a new password.</p>');
+        return $mailer->sendMail($user->email,'User');//returns whether the mail was sent successfully
     }
     
 	/**
